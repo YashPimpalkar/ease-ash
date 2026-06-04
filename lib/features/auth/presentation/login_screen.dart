@@ -38,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _checkBiometricSetup() async {
     final storage = ref.read(secureStorageServiceProvider);
     final bioEmail = await storage.getBiometricUserEmail();
+    if (!mounted) return;
     if (bioEmail != null && bioEmail.isNotEmpty) {
       setState(() {
         _hasBiometricUser = true;
