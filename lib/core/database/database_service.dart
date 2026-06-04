@@ -8,6 +8,7 @@ import '../../features/journal/domain/diary_model.dart';
 import '../../features/settings/domain/ai_model_config.dart';
 import '../../features/tasks/domain/task_model.dart';
 import '../../features/budget/domain/transaction_model.dart';
+import '../../features/auth/presentation/auth_provider.dart';
 
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   throw UnimplementedError('DatabaseService has not been initialized. Call init() first.');
@@ -139,9 +140,51 @@ class DatabaseService {
   IsarCollection<GymWorkout> get gymWorkouts => isar.gymWorkouts;
   IsarCollection<Task> get tasks => isar.tasks;
   IsarCollection<Transaction> get transactions => isar.transactions;
+
+  Future<void> migrateLegacyData(String email) async {
+    final cleanEmail = email.toLowerCase();
+    await isar.writeTxn(() async {
+      // 1. Tasks
+      final tasksToMigrate = await isar.tasks.filter().userEmailIsNull().findAll();
+      for (final t in tasksToMigrate) {
+        t.userEmail = cleanEmail;
+      }
+      await isar.tasks.putAll(tasksToMigrate);
+
+      // 2. CalendarEvents
+      final eventsToMigrate = await isar.calendarEvents.filter().userEmailIsNull().findAll();
+      for (final e in eventsToMigrate) {
+        e.userEmail = cleanEmail;
+      }
+      await isar.calendarEvents.putAll(eventsToMigrate);
+
+      // 3. Transactions
+      final txsToMigrate = await isar.transactions.filter().userEmailIsNull().findAll();
+      for (final tx in txsToMigrate) {
+        tx.userEmail = cleanEmail;
+      }
+      await isar.transactions.putAll(txsToMigrate);
+
+      // 4. GymWorkouts
+      final workoutsToMigrate = await isar.gymWorkouts.filter().userEmailIsNull().findAll();
+      for (final w in workoutsToMigrate) {
+        w.userEmail = cleanEmail;
+      }
+      await isar.gymWorkouts.putAll(workoutsToMigrate);
+
+      // 5. DiaryEntries
+      final entriesToMigrate = await isar.diaryEntries.filter().userEmailIsNull().findAll();
+      for (final entry in entriesToMigrate) {
+        entry.userEmail = cleanEmail;
+      }
+      await isar.diaryEntries.putAll(entriesToMigrate);
+    });
+  }
 }
 
 final transactionsStreamProvider = StreamProvider<List<Transaction>>((ref) {
   final db = ref.watch(databaseServiceProvider);
-  return db.isar.transactions.where().sortByDateDesc().watch(fireImmediately: true);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return db.isar.transactions.filter().userEmailEqualTo(email).sortByDateDesc().watch(fireImmediately: true);
 });

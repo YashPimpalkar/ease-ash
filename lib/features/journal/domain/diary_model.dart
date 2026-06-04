@@ -22,6 +22,9 @@ class DiaryEntry {
 
   late bool isSynced;
 
+  @Index()
+  String? userEmail;
+
   DiaryEntry({
     this.id = Isar.autoIncrement,
     required this.title,
@@ -31,5 +34,6 @@ class DiaryEntry {
     required this.moodValue,
     this.aiFeedback,
     this.isSynced = false,
+    this.userEmail,
   });
 }

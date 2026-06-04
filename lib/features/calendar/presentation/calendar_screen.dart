@@ -5,6 +5,8 @@ import '../../../core/database/database_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/calendar_event_model.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
+
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -35,7 +37,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Future<void> _loadEvents() async {
     final db = ref.read(databaseServiceProvider);
-    final eventsList = await db.isar.calendarEvents.where().sortByStartTime().findAll();
+    final email = ref.read(authProvider).email ?? '';
+    final eventsList = await db.isar.calendarEvents.filter().userEmailEqualTo(email).sortByStartTime().findAll();
 
     // Map events by day (stripping time)
     final Map<DateTime, List<CalendarEvent>> mapped = {};
@@ -78,6 +81,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     String recurrence,
   ) async {
     final db = ref.read(databaseServiceProvider);
+    final email = ref.read(authProvider).email ?? '';
     final event = CalendarEvent(
       title: title.trim(),
       description: description?.trim(),
@@ -87,6 +91,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       colorHex: colorHex,
       recurrence: recurrence,
       isSynced: false,
+      userEmail: email,
     );
 
     await db.isar.writeTxn(() async {

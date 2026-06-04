@@ -61,6 +61,11 @@ const CalendarEventSchema = CollectionSchema(
       id: 8,
       name: r'title',
       type: IsarType.string,
+    ),
+    r'userEmail': PropertySchema(
+      id: 9,
+      name: r'userEmail',
+      type: IsarType.string,
     )
   },
   estimateSize: _calendarEventEstimateSize,
@@ -107,6 +112,19 @@ const CalendarEventSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'userEmail': IndexSchema(
+      id: -7139880982916714350,
+      name: r'userEmail',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userEmail',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -133,6 +151,12 @@ int _calendarEventEstimateSize(
   }
   bytesCount += 3 + object.recurrence.length * 3;
   bytesCount += 3 + object.title.length * 3;
+  {
+    final value = object.userEmail;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -151,6 +175,7 @@ void _calendarEventSerialize(
   writer.writeString(offsets[6], object.recurrence);
   writer.writeDateTime(offsets[7], object.startTime);
   writer.writeString(offsets[8], object.title);
+  writer.writeString(offsets[9], object.userEmail);
 }
 
 CalendarEvent _calendarEventDeserialize(
@@ -170,6 +195,7 @@ CalendarEvent _calendarEventDeserialize(
     recurrence: reader.readStringOrNull(offsets[6]) ?? 'none',
     startTime: reader.readDateTime(offsets[7]),
     title: reader.readString(offsets[8]),
+    userEmail: reader.readStringOrNull(offsets[9]),
   );
   return object;
 }
@@ -199,6 +225,8 @@ P _calendarEventDeserializeProp<P>(
       return (reader.readDateTime(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -536,6 +564,73 @@ extension CalendarEventQueryWhere
               indexName: r'category',
               lower: [],
               upper: [category],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterWhereClause>
+      userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterWhereClause>
+      userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'userEmail',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterWhereClause>
+      userEmailEqualTo(String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [userEmail],
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterWhereClause>
+      userEmailNotEqualTo(String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
               includeUpper: false,
             ));
       }
@@ -1428,6 +1523,160 @@ extension CalendarEventQueryFilter
       ));
     });
   }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userEmail',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userEmail',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterFilterCondition>
+      userEmailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension CalendarEventQueryObject
@@ -1550,6 +1799,19 @@ extension CalendarEventQuerySortBy
   QueryBuilder<CalendarEvent, CalendarEvent, QAfterSortBy> sortByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterSortBy> sortByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterSortBy>
+      sortByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
     });
   }
 }
@@ -1682,6 +1944,19 @@ extension CalendarEventQuerySortThenBy
       return query.addSortBy(r'title', Sort.desc);
     });
   }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterSortBy> thenByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QAfterSortBy>
+      thenByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
+    });
+  }
 }
 
 extension CalendarEventQueryWhereDistinct
@@ -1742,6 +2017,13 @@ extension CalendarEventQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'title', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CalendarEvent, CalendarEvent, QDistinct> distinctByUserEmail(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userEmail', caseSensitive: caseSensitive);
     });
   }
 }
@@ -1805,6 +2087,12 @@ extension CalendarEventQueryProperty
   QueryBuilder<CalendarEvent, String, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
+    });
+  }
+
+  QueryBuilder<CalendarEvent, String?, QQueryOperations> userEmailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userEmail');
     });
   }
 }

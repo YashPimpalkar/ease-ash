@@ -4,6 +4,8 @@ import '../../../core/database/database_service.dart';
 import '../../../core/services/ai_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/diary_model.dart';
+import '../../auth/presentation/auth_provider.dart';
+
 
 class DiaryWriterScreen extends ConsumerStatefulWidget {
   const DiaryWriterScreen({super.key});
@@ -63,6 +65,7 @@ class _DiaryWriterScreenState extends ConsumerState<DiaryWriterScreen> {
 
     // Write to Isar
     final db = ref.read(databaseServiceProvider);
+    final email = ref.read(authProvider).email ?? '';
     final entry = DiaryEntry(
       title: title,
       content: content,
@@ -71,10 +74,11 @@ class _DiaryWriterScreenState extends ConsumerState<DiaryWriterScreen> {
       moodValue: _moodValue,
       aiFeedback: feedback,
       isSynced: false,
+      userEmail: email,
     );
 
     await db.isar.writeTxn(() async {
-    await db.diaryEntries.put(entry);
+      await db.diaryEntries.put(entry);
     });
 
     if (mounted) {

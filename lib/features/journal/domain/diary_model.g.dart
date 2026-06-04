@@ -51,6 +51,11 @@ const DiaryEntrySchema = CollectionSchema(
       id: 6,
       name: r'title',
       type: IsarType.string,
+    ),
+    r'userEmail': PropertySchema(
+      id: 7,
+      name: r'userEmail',
+      type: IsarType.string,
     )
   },
   estimateSize: _diaryEntryEstimateSize,
@@ -84,6 +89,19 @@ const DiaryEntrySchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'userEmail': IndexSchema(
+      id: -7139880982916714350,
+      name: r'userEmail',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userEmail',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -109,6 +127,12 @@ int _diaryEntryEstimateSize(
   bytesCount += 3 + object.content.length * 3;
   bytesCount += 3 + object.moodEmoji.length * 3;
   bytesCount += 3 + object.title.length * 3;
+  {
+    final value = object.userEmail;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -125,6 +149,7 @@ void _diaryEntrySerialize(
   writer.writeString(offsets[4], object.moodEmoji);
   writer.writeDouble(offsets[5], object.moodValue);
   writer.writeString(offsets[6], object.title);
+  writer.writeString(offsets[7], object.userEmail);
 }
 
 DiaryEntry _diaryEntryDeserialize(
@@ -142,6 +167,7 @@ DiaryEntry _diaryEntryDeserialize(
     moodEmoji: reader.readString(offsets[4]),
     moodValue: reader.readDouble(offsets[5]),
     title: reader.readString(offsets[6]),
+    userEmail: reader.readStringOrNull(offsets[7]),
   );
   return object;
 }
@@ -167,6 +193,8 @@ P _diaryEntryDeserializeProp<P>(
       return (reader.readDouble(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -453,6 +481,71 @@ extension DiaryEntryQueryWhere
         upper: [upperMoodValue],
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterWhereClause> userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterWhereClause> userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'userEmail',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterWhereClause> userEmailEqualTo(
+      String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [userEmail],
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterWhereClause> userEmailNotEqualTo(
+      String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -1187,6 +1280,158 @@ extension DiaryEntryQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userEmail',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition> userEmailMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userEmail',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterFilterCondition>
+      userEmailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension DiaryEntryQueryObject
@@ -1278,6 +1523,18 @@ extension DiaryEntryQuerySortBy
   QueryBuilder<DiaryEntry, DiaryEntry, QAfterSortBy> sortByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterSortBy> sortByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterSortBy> sortByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
     });
   }
 }
@@ -1379,6 +1636,18 @@ extension DiaryEntryQuerySortThenBy
       return query.addSortBy(r'title', Sort.desc);
     });
   }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterSortBy> thenByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QAfterSortBy> thenByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
+    });
+  }
 }
 
 extension DiaryEntryQueryWhereDistinct
@@ -1426,6 +1695,13 @@ extension DiaryEntryQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'title', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<DiaryEntry, DiaryEntry, QDistinct> distinctByUserEmail(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userEmail', caseSensitive: caseSensitive);
     });
   }
 }
@@ -1477,6 +1753,12 @@ extension DiaryEntryQueryProperty
   QueryBuilder<DiaryEntry, String, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
+    });
+  }
+
+  QueryBuilder<DiaryEntry, String?, QQueryOperations> userEmailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userEmail');
     });
   }
 }

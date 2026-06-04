@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../domain/workout_model.dart';
 import 'workout_active_screen.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
 
 class GymScreen extends ConsumerStatefulWidget {
   const GymScreen({super.key});
@@ -44,7 +45,8 @@ class _GymScreenState extends ConsumerState<GymScreen> {
 
   Future<void> _loadPastWorkouts() async {
     final db = ref.read(databaseServiceProvider);
-    final workouts = await db.isar.gymWorkouts.where().sortByDateDesc().findAll();
+    final email = ref.read(authProvider).email ?? '';
+    final workouts = await db.isar.gymWorkouts.filter().userEmailEqualTo(email).sortByDateDesc().findAll();
     setState(() {
       _pastWorkouts = workouts;
       _isLoading = false;

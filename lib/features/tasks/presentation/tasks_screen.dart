@@ -4,6 +4,7 @@ import '../../../core/database/database_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/task_model.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
@@ -24,7 +25,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 
   Future<void> _loadTasks() async {
     final db = ref.read(databaseServiceProvider);
-    final tasksList = await db.isar.tasks.where().sortByDueDate().findAll();
+    final email = ref.read(authProvider).email ?? '';
+    final tasksList = await db.isar.tasks.filter().userEmailEqualTo(email).sortByDueDate().findAll();
 
     // Bootstrap default habits if Isar is completely empty for habits
     final habitCount = tasksList.where((t) => t.category == 'Habit').length;
@@ -37,6 +39,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           priority: 'low',
           category: 'Habit',
           createdAt: now,
+          userEmail: email,
         ),
         Task(
           title: 'Drink 3L Water',
@@ -44,6 +47,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           priority: 'medium',
           category: 'Habit',
           createdAt: now,
+          userEmail: email,
         ),
         Task(
           title: 'Gym Workout',
@@ -51,6 +55,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           priority: 'high',
           category: 'Habit',
           createdAt: now,
+          userEmail: email,
         ),
       ];
 
@@ -58,7 +63,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         await db.isar.tasks.putAll(defaultHabits);
       });
 
-      final updatedTasks = await db.isar.tasks.where().sortByDueDate().findAll();
+      final updatedTasks = await db.isar.tasks.filter().userEmailEqualTo(email).sortByDueDate().findAll();
       setState(() {
         _tasks = updatedTasks;
         _isLoading = false;
@@ -114,6 +119,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     List<String> subtasks,
   ) async {
     final db = ref.read(databaseServiceProvider);
+    final email = ref.read(authProvider).email ?? '';
     final task = Task(
       title: title.trim(),
       description: description?.trim(),
@@ -124,6 +130,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       subtaskCompleted: List<bool>.filled(subtasks.length, false),
       createdAt: DateTime.now(),
       isSynced: false,
+      userEmail: email,
     );
 
     await db.isar.writeTxn(() async {

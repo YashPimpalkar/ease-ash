@@ -27,6 +27,9 @@ class CalendarEvent {
 
   late bool isSynced;
 
+  @Index()
+  String? userEmail;
+
   CalendarEvent({
     this.id = Isar.autoIncrement,
     required this.title,
@@ -38,5 +41,6 @@ class CalendarEvent {
     this.isAllDay = false,
     this.recurrence = 'none',
     this.isSynced = false,
+    this.userEmail,
   });
 }

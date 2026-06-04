@@ -30,6 +30,9 @@ class Task {
 
   late bool isSynced;
 
+  @Index()
+  String? userEmail;
+
   Task({
     this.id = Isar.autoIncrement,
     required this.title,
@@ -42,5 +45,6 @@ class Task {
     required this.category,
     required this.createdAt,
     this.isSynced = false,
+    this.userEmail,
   });
 }

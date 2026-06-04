@@ -41,11 +41,15 @@ class GymWorkout {
 
   late bool isSynced;
 
+  @Index()
+  String? userEmail;
+
   GymWorkout({
     this.id = Isar.autoIncrement,
     required this.name,
     required this.date,
     this.exercises = const [],
     this.isSynced = false,
+    this.userEmail,
   });
 }

@@ -37,6 +37,11 @@ const GymWorkoutSchema = CollectionSchema(
       id: 3,
       name: r'name',
       type: IsarType.string,
+    ),
+    r'userEmail': PropertySchema(
+      id: 4,
+      name: r'userEmail',
+      type: IsarType.string,
     )
   },
   estimateSize: _gymWorkoutEstimateSize,
@@ -55,6 +60,19 @@ const GymWorkoutSchema = CollectionSchema(
           name: r'date',
           type: IndexType.value,
           caseSensitive: false,
+        )
+      ],
+    ),
+    r'userEmail': IndexSchema(
+      id: -7139880982916714350,
+      name: r'userEmail',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userEmail',
+          type: IndexType.hash,
+          caseSensitive: true,
         )
       ],
     )
@@ -85,6 +103,12 @@ int _gymWorkoutEstimateSize(
     }
   }
   bytesCount += 3 + object.name.length * 3;
+  {
+    final value = object.userEmail;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -103,6 +127,7 @@ void _gymWorkoutSerialize(
   );
   writer.writeBool(offsets[2], object.isSynced);
   writer.writeString(offsets[3], object.name);
+  writer.writeString(offsets[4], object.userEmail);
 }
 
 GymWorkout _gymWorkoutDeserialize(
@@ -123,6 +148,7 @@ GymWorkout _gymWorkoutDeserialize(
     id: id,
     isSynced: reader.readBoolOrNull(offsets[2]) ?? false,
     name: reader.readString(offsets[3]),
+    userEmail: reader.readStringOrNull(offsets[4]),
   );
   return object;
 }
@@ -148,6 +174,8 @@ P _gymWorkoutDeserializeProp<P>(
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 3:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -336,6 +364,71 @@ extension GymWorkoutQueryWhere
         upper: [upperDate],
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterWhereClause> userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterWhereClause> userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'userEmail',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterWhereClause> userEmailEqualTo(
+      String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userEmail',
+        value: [userEmail],
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterWhereClause> userEmailNotEqualTo(
+      String? userEmail) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [userEmail],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userEmail',
+              lower: [],
+              upper: [userEmail],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -676,6 +769,158 @@ extension GymWorkoutQueryFilter
       ));
     });
   }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'userEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userEmail',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition> userEmailMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userEmail',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterFilterCondition>
+      userEmailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userEmail',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension GymWorkoutQueryObject
@@ -726,6 +971,18 @@ extension GymWorkoutQuerySortBy
   QueryBuilder<GymWorkout, GymWorkout, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterSortBy> sortByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterSortBy> sortByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
     });
   }
 }
@@ -779,6 +1036,18 @@ extension GymWorkoutQuerySortThenBy
       return query.addSortBy(r'name', Sort.desc);
     });
   }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterSortBy> thenByUserEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QAfterSortBy> thenByUserEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userEmail', Sort.desc);
+    });
+  }
 }
 
 extension GymWorkoutQueryWhereDistinct
@@ -799,6 +1068,13 @@ extension GymWorkoutQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<GymWorkout, GymWorkout, QDistinct> distinctByUserEmail(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userEmail', caseSensitive: caseSensitive);
     });
   }
 }
@@ -833,6 +1109,12 @@ extension GymWorkoutQueryProperty
   QueryBuilder<GymWorkout, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<GymWorkout, String?, QQueryOperations> userEmailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userEmail');
     });
   }
 }

@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import '../database/database_service.dart';
 import '../database/secure_storage_service.dart';
+import '../../features/auth/presentation/auth_provider.dart';
 
 import '../../features/tasks/domain/task_model.dart';
 import '../../features/calendar/domain/calendar_event_model.dart';
@@ -13,17 +14,25 @@ import '../../features/journal/domain/diary_model.dart';
 final syncServiceProvider = Provider<SyncService>((ref) {
   final dbService = ref.watch(databaseServiceProvider);
   final secureStorage = ref.watch(secureStorageServiceProvider);
-  return SyncService(dbService, secureStorage);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return SyncService(dbService, secureStorage, email);
 });
+
 
 class SyncService {
   final DatabaseService _db;
   final SecureStorageService _secureStorage;
+  final String _userEmail;
 
-  SyncService(this._db, this._secureStorage);
+  SyncService(this._db, this._secureStorage, this._userEmail);
 
   /// Run full bidirectional synchronization between local Isar and MongoDB
   Future<bool> syncAll() async {
+    if (_userEmail.isEmpty) {
+      print('Sync Service: No user logged in. Skipping sync.');
+      return false;
+    }
     final mongoUri = await _secureStorage.getMongoDbUri();
     if (mongoUri == null || mongoUri.isEmpty) {
       print('Sync Service: MongoDB URI not configured.');
@@ -63,7 +72,7 @@ class SyncService {
     final coll = db.collection('tasks');
 
     // 1. Push local unsynced tasks
-    final unsynced = await _db.tasks.filter().isSyncedEqualTo(false).findAll();
+    final unsynced = await _db.tasks.filter().userEmailEqualTo(_userEmail).isSyncedEqualTo(false).findAll();
     if (unsynced.isNotEmpty) {
       print('Sync Service: Pushing ${unsynced.length} tasks to MongoDB.');
       for (final task in unsynced) {
@@ -80,7 +89,7 @@ class SyncService {
     }
 
     // 2. Pull remote tasks
-    final remoteDocs = await coll.find().toList();
+    final remoteDocs = await coll.find({'userEmail': _userEmail}).toList();
     if (remoteDocs.isNotEmpty) {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
@@ -95,7 +104,7 @@ class SyncService {
     final coll = db.collection('calendar_events');
 
     // 1. Push local unsynced
-    final unsynced = await _db.calendarEvents.filter().isSyncedEqualTo(false).findAll();
+    final unsynced = await _db.calendarEvents.filter().userEmailEqualTo(_userEmail).isSyncedEqualTo(false).findAll();
     if (unsynced.isNotEmpty) {
       print('Sync Service: Pushing ${unsynced.length} events to MongoDB.');
       for (final event in unsynced) {
@@ -111,7 +120,7 @@ class SyncService {
     }
 
     // 2. Pull remote
-    final remoteDocs = await coll.find().toList();
+    final remoteDocs = await coll.find({'userEmail': _userEmail}).toList();
     if (remoteDocs.isNotEmpty) {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
@@ -126,7 +135,7 @@ class SyncService {
     final coll = db.collection('transactions');
 
     // 1. Push local unsynced
-    final unsynced = await _db.transactions.filter().isSyncedEqualTo(false).findAll();
+    final unsynced = await _db.transactions.filter().userEmailEqualTo(_userEmail).isSyncedEqualTo(false).findAll();
     if (unsynced.isNotEmpty) {
       print('Sync Service: Pushing ${unsynced.length} transactions to MongoDB.');
       for (final tx in unsynced) {
@@ -142,7 +151,7 @@ class SyncService {
     }
 
     // 2. Pull remote
-    final remoteDocs = await coll.find().toList();
+    final remoteDocs = await coll.find({'userEmail': _userEmail}).toList();
     if (remoteDocs.isNotEmpty) {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
@@ -157,7 +166,7 @@ class SyncService {
     final coll = db.collection('gym_workouts');
 
     // 1. Push local unsynced
-    final unsynced = await _db.gymWorkouts.filter().isSyncedEqualTo(false).findAll();
+    final unsynced = await _db.gymWorkouts.filter().userEmailEqualTo(_userEmail).isSyncedEqualTo(false).findAll();
     if (unsynced.isNotEmpty) {
       print('Sync Service: Pushing ${unsynced.length} workouts to MongoDB.');
       for (final workout in unsynced) {
@@ -173,7 +182,7 @@ class SyncService {
     }
 
     // 2. Pull remote
-    final remoteDocs = await coll.find().toList();
+    final remoteDocs = await coll.find({'userEmail': _userEmail}).toList();
     if (remoteDocs.isNotEmpty) {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
@@ -188,7 +197,7 @@ class SyncService {
     final coll = db.collection('diary_entries');
 
     // 1. Push local unsynced
-    final unsynced = await _db.diaryEntries.filter().isSyncedEqualTo(false).findAll();
+    final unsynced = await _db.diaryEntries.filter().userEmailEqualTo(_userEmail).isSyncedEqualTo(false).findAll();
     if (unsynced.isNotEmpty) {
       print('Sync Service: Pushing ${unsynced.length} diary entries to MongoDB.');
       for (final entry in unsynced) {
@@ -204,7 +213,7 @@ class SyncService {
     }
 
     // 2. Pull remote
-    final remoteDocs = await coll.find().toList();
+    final remoteDocs = await coll.find({'userEmail': _userEmail}).toList();
     if (remoteDocs.isNotEmpty) {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
@@ -228,6 +237,7 @@ class SyncService {
         'subtaskCompleted': task.subtaskCompleted,
         'category': task.category,
         'createdAt': task.createdAt.toIso8601String(),
+        'userEmail': task.userEmail ?? _userEmail,
       };
 
   Task _taskFromMap(Map<String, dynamic> map) => Task(
@@ -242,6 +252,7 @@ class SyncService {
         category: map['category'] as String? ?? 'Personal',
         createdAt: DateTime.parse(map['createdAt'] as String),
         isSynced: true,
+        userEmail: map['userEmail'] as String? ?? _userEmail,
       );
 
   Map<String, dynamic> _eventToMap(CalendarEvent event) => {
@@ -254,6 +265,7 @@ class SyncService {
         'colorHex': event.colorHex,
         'isAllDay': event.isAllDay,
         'recurrence': event.recurrence,
+        'userEmail': event.userEmail ?? _userEmail,
       };
 
   CalendarEvent _eventFromMap(Map<String, dynamic> map) => CalendarEvent(
@@ -267,6 +279,7 @@ class SyncService {
         isAllDay: map['isAllDay'] as bool? ?? false,
         recurrence: map['recurrence'] as String? ?? 'none',
         isSynced: true,
+        userEmail: map['userEmail'] as String? ?? _userEmail,
       );
 
   Map<String, dynamic> _transactionToMap(Transaction tx) => {
@@ -277,6 +290,7 @@ class SyncService {
         'isExpense': tx.isExpense,
         'category': tx.category,
         'date': tx.date.toIso8601String(),
+        'userEmail': tx.userEmail ?? _userEmail,
       };
 
   Transaction _transactionFromMap(Map<String, dynamic> map) => Transaction(
@@ -288,6 +302,7 @@ class SyncService {
         category: map['category'] as String? ?? 'Food',
         date: DateTime.parse(map['date'] as String),
         isSynced: true,
+        userEmail: map['userEmail'] as String? ?? _userEmail,
       );
 
   Map<String, dynamic> _diaryToMap(DiaryEntry entry) => {
@@ -298,6 +313,7 @@ class SyncService {
         'moodEmoji': entry.moodEmoji,
         'moodValue': entry.moodValue,
         'aiFeedback': entry.aiFeedback,
+        'userEmail': entry.userEmail ?? _userEmail,
       };
 
   DiaryEntry _diaryFromMap(Map<String, dynamic> map) => DiaryEntry(
@@ -309,6 +325,7 @@ class SyncService {
         moodValue: (map['moodValue'] as num? ?? 3.0).toDouble(),
         aiFeedback: map['aiFeedback'] as String?,
         isSynced: true,
+        userEmail: map['userEmail'] as String? ?? _userEmail,
       );
 
   Map<String, dynamic> _workoutToMap(GymWorkout workout) => {
@@ -324,6 +341,7 @@ class SyncService {
                     'isCompleted': s.isCompleted,
                   }).toList(),
             }).toList(),
+        'userEmail': workout.userEmail ?? _userEmail,
       };
 
   GymWorkout _workoutFromMap(Map<String, dynamic> map) => GymWorkout(
@@ -348,5 +366,6 @@ class SyncService {
             }).toList() ??
             [],
         isSynced: true,
+        userEmail: map['userEmail'] as String? ?? _userEmail,
       );
 }

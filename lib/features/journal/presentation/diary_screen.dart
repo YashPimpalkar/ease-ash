@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../domain/diary_model.dart';
 import 'diary_writer_screen.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
+
 
 class DiaryScreen extends ConsumerStatefulWidget {
   const DiaryScreen({super.key});
@@ -25,7 +27,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
 
   Future<void> _loadEntries() async {
     final db = ref.read(databaseServiceProvider);
-    final entries = await db.diaryEntries.where().sortByDateDesc().findAll();
+    final email = ref.read(authProvider).email ?? '';
+    final entries = await db.diaryEntries.filter().userEmailEqualTo(email).sortByDateDesc().findAll();
     setState(() {
       _diaryEntries = entries;
       _isLoading = false;

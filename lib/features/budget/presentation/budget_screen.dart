@@ -7,6 +7,8 @@ import '../../../core/services/ai_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/transaction_model.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
+
 
 class BudgetScreen extends ConsumerStatefulWidget {
   const BudgetScreen({super.key});
@@ -40,6 +42,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     DateTime date,
   ) async {
     final db = ref.read(databaseServiceProvider);
+    final email = ref.read(authProvider).email ?? '';
     final tx = Transaction(
       title: title.trim(),
       description: description?.trim(),
@@ -48,6 +51,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       category: category,
       date: date,
       isSynced: false,
+      userEmail: email,
     );
 
     await db.isar.writeTxn(() async {

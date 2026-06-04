@@ -23,6 +23,9 @@ class Transaction {
 
   late bool isSynced;
 
+  @Index()
+  String? userEmail;
+
   Transaction({
     this.id = Isar.autoIncrement,
     required this.title,
@@ -32,5 +35,6 @@ class Transaction {
     required this.category,
     required this.date,
     this.isSynced = false,
+    this.userEmail,
   });
 }

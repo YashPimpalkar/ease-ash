@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/workout_model.dart';
+import '../../auth/presentation/auth_provider.dart';
 
 class WorkoutActiveScreen extends ConsumerStatefulWidget {
   final String templateName;
@@ -157,6 +158,7 @@ class _WorkoutActiveScreenState extends ConsumerState<WorkoutActiveScreen> {
 
   Future<void> _finishWorkout() async {
     final db = ref.read(databaseServiceProvider);
+    final email = ref.read(authProvider).email ?? '';
     
     // Create new GymWorkout record
     final workout = GymWorkout(
@@ -164,6 +166,7 @@ class _WorkoutActiveScreenState extends ConsumerState<WorkoutActiveScreen> {
       date: DateTime.now(),
       exercises: _exerciseLogs,
       isSynced: false,
+      userEmail: email,
     );
 
     await db.isar.writeTxn(() async {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:crypto/crypto.dart';
 import '../../../core/database/secure_storage_service.dart';
+import '../../../core/database/database_service.dart';
 
 enum AuthStatus { authenticated, unauthenticated }
 
@@ -45,9 +46,10 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final SecureStorageService _storage;
+  final DatabaseService _db;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  AuthNotifier(this._storage) : super(AuthState(status: AuthStatus.unauthenticated)) {
+  AuthNotifier(this._storage, this._db) : super(AuthState(status: AuthStatus.unauthenticated)) {
     checkLoginStatus();
   }
 
@@ -67,6 +69,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         }
 
         final isBioEnabled = await _storage.isBiometricEnabled(email);
+        await _db.migrateLegacyData(email);
 
         state = AuthState(
           status: AuthStatus.authenticated,
@@ -104,6 +107,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           await _storage.saveCurrentUserEmail(cleanEmail);
           await _storage.saveUserRole(cleanEmail, 'admin');
           final isBioEnabled = await _storage.isBiometricEnabled(cleanEmail);
+          await _db.migrateLegacyData(cleanEmail);
           
           state = state.copyWith(
             status: AuthStatus.authenticated,
@@ -130,6 +134,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _storage.saveCurrentUserEmail(cleanEmail);
         final role = await _storage.getUserRole(cleanEmail) ?? 'user';
         final isBioEnabled = await _storage.isBiometricEnabled(cleanEmail);
+        await _db.migrateLegacyData(cleanEmail);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
@@ -178,6 +183,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storage.saveUserPasswordHash(cleanEmail, hash);
       await _storage.saveUserRole(cleanEmail, 'user');
       await _storage.saveCurrentUserEmail(cleanEmail);
+      await _db.migrateLegacyData(cleanEmail);
 
       state = state.copyWith(
         status: AuthStatus.authenticated,
@@ -218,6 +224,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         } else {
           role = await _storage.getUserRole(bioUser) ?? 'user';
         }
+        await _db.migrateLegacyData(bioUser);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
@@ -289,5 +296,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final storage = ref.watch(secureStorageServiceProvider);
-  return AuthNotifier(storage);
+  final db = ref.watch(databaseServiceProvider);
+  return AuthNotifier(storage, db);
 });
