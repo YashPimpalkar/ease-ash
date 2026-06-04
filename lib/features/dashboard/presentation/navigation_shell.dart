@@ -8,6 +8,7 @@ import '../../budget/presentation/budget_screen.dart';
 import '../../fitness/presentation/gym_screen.dart';
 import '../../journal/presentation/diary_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../../auth/presentation/auth_provider.dart';
 import 'home_screen.dart';
 import 'navigation_state.dart';
 
@@ -154,6 +155,16 @@ class AppDrawer extends ConsumerWidget {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
               },
             ),
+            _buildDrawerItem(
+              context,
+              title: 'Log Out',
+              icon: FontAwesomeIcons.rightFromBracket,
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(authProvider.notifier).logout();
+              },
+              color: Colors.redAccent,
+            ),
           ],
         ),
       ),
@@ -165,12 +176,14 @@ class AppDrawer extends ConsumerWidget {
     required String title,
     required IconData icon,
     required VoidCallback onTap,
+    Color? color,
   }) {
+    final displayColor = color ?? const Color(0xFF00E6FF);
     return ListTile(
-      leading: FaIcon(icon, color: const Color(0xFF00E6FF), size: 18),
+      leading: FaIcon(icon, color: displayColor, size: 18),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: TextStyle(color: color ?? Colors.white, fontSize: 16),
       ),
       onTap: onTap,
     );
