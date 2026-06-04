@@ -1,6 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../features/auth/presentation/auth_provider.dart';
+
 
 final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
   return SecureStorageService();
@@ -73,13 +75,15 @@ class SecureStorageService {
   }
 
   // Starting Bank Balance
-  Future<double?> getStartingBalance() async {
-    final val = await _storage.read(key: _keyStartingBalance);
+  Future<double?> getStartingBalance([String? email]) async {
+    final key = email == null ? _keyStartingBalance : '${_keyStartingBalance}_${email.toLowerCase()}';
+    final val = await _storage.read(key: key);
     return val != null ? double.tryParse(val) : null;
   }
 
-  Future<void> saveStartingBalance(double value) async {
-    await _storage.write(key: _keyStartingBalance, value: value.toString());
+  Future<void> saveStartingBalance(double value, [String? email]) async {
+    final key = email == null ? _keyStartingBalance : '${_keyStartingBalance}_${email.toLowerCase()}';
+    await _storage.write(key: key, value: value.toString());
   }
 
   // Auth Helpers
@@ -140,23 +144,31 @@ class SecureStorageService {
 
 final startingBalanceProvider = StateNotifierProvider<StartingBalanceNotifier, double>((ref) {
   final storage = ref.watch(secureStorageServiceProvider);
-  return StartingBalanceNotifier(storage);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return StartingBalanceNotifier(storage, email);
 });
 
 class StartingBalanceNotifier extends StateNotifier<double> {
   final SecureStorageService _storage;
+  final String _email;
 
-  StartingBalanceNotifier(this._storage) : super(0.0) {
+  StartingBalanceNotifier(this._storage, this._email) : super(0.0) {
     loadStartingBalance();
   }
 
   Future<void> loadStartingBalance() async {
-    final balance = await _storage.getStartingBalance();
+    if (_email.isEmpty) {
+      state = 0.0;
+      return;
+    }
+    final balance = await _storage.getStartingBalance(_email);
     state = balance ?? 0.0;
   }
 
   Future<void> updateStartingBalance(double value) async {
-    await _storage.saveStartingBalance(value);
+    if (_email.isEmpty) return;
+    await _storage.saveStartingBalance(value, _email);
     state = value;
   }
 }

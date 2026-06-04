@@ -9,6 +9,8 @@ import '../../fitness/presentation/gym_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'navigation_state.dart';
 import 'package:isar/isar.dart';
+import '../../auth/presentation/auth_provider.dart';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +24,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final startingBalance = ref.watch(startingBalanceProvider);
     final transactionsAsync = ref.watch(transactionsStreamProvider);
+    final auth = ref.watch(authProvider);
+    final email = auth.email ?? '';
+    String displayName = 'User';
+    if (email.isNotEmpty) {
+      if (email.toLowerCase() == 'yashpimpalkar214@gmail.com') {
+        displayName = 'Yash';
+      } else if (email.contains('@')) {
+        final prefix = email.split('@')[0];
+        if (prefix.isNotEmpty) {
+          displayName = prefix[0].toUpperCase() + prefix.substring(1);
+        } else {
+          displayName = email;
+        }
+      } else {
+        displayName = email;
+      }
+    }
 
     return Scaffold(
       body: Container(
@@ -72,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                               ),
                               Text(
-                                'Yash',
+                                displayName,
                                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                                       color: Colors.white,
                                     ),
