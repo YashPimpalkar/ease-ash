@@ -398,7 +398,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       );
-    }  }
+  }
 
   Widget _buildSettingCard(
     BuildContext context, {
