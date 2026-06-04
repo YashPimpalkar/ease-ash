@@ -52,32 +52,77 @@ class DatabaseService {
     }
 
     final count = await isar.aiModelConfigs.count();
-    if (count == 0) {
+
+    // Migration: If no Gemini models exist in the database, bootstrap the default Gemini models
+    final hasGemini = await isar.aiModelConfigs.filter().modelNameStartsWith('gemini-').count() > 0;
+    if (!hasGemini && count > 0) {
+      await isar.writeTxn(() async {
+        // Shift priorities of all existing models by +3
+        final existingModels = await isar.aiModelConfigs.where().findAll();
+        for (final model in existingModels) {
+          model.priority += 3;
+          await isar.aiModelConfigs.put(model);
+        }
+
+        // Insert default Gemini models
+        final geminiModels = [
+          AiModelConfig(
+            modelName: 'gemini-2.5-flash',
+            displayName: 'Gemini 2.5 Flash (Primary)',
+            priority: 1,
+          ),
+          AiModelConfig(
+            modelName: 'gemini-2.5-pro',
+            displayName: 'Gemini 2.5 Pro (Secondary)',
+            priority: 2,
+          ),
+          AiModelConfig(
+            modelName: 'gemini-1.5-flash',
+            displayName: 'Gemini 1.5 Flash (Tertiary)',
+            priority: 3,
+          ),
+        ];
+        await isar.aiModelConfigs.putAll(geminiModels);
+      });
+    }
+
+    final newCount = await isar.aiModelConfigs.count();
+    if (newCount == 0) {
       final defaultModels = [
         AiModelConfig(
-          modelName: 'llama-3.3-70b-versatile',
-          displayName: 'Llama 3.3 70B (Primary)',
+          modelName: 'gemini-2.5-flash',
+          displayName: 'Gemini 2.5 Flash (Primary)',
           priority: 1,
         ),
         AiModelConfig(
-          modelName: 'llama-3.3-70b-specdec',
-          displayName: 'Llama 3.3 70B (Secondary)',
+          modelName: 'gemini-2.5-pro',
+          displayName: 'Gemini 2.5 Pro (Secondary)',
           priority: 2,
         ),
         AiModelConfig(
-          modelName: 'llama3-70b-8192',
-          displayName: 'Llama 3 70B (Tertiary)',
+          modelName: 'gemini-1.5-flash',
+          displayName: 'Gemini 1.5 Flash (Tertiary)',
           priority: 3,
+        ),
+        AiModelConfig(
+          modelName: 'llama-3.3-70b-versatile',
+          displayName: 'Llama 3.3 70B',
+          priority: 4,
+        ),
+        AiModelConfig(
+          modelName: 'llama-3.3-70b-specdec',
+          displayName: 'Llama 3.3 70B SpecDec',
+          priority: 5,
         ),
         AiModelConfig(
           modelName: 'llama-3.1-8b-instant',
           displayName: 'Llama 3.1 8B (Fast Backup)',
-          priority: 4,
+          priority: 6,
         ),
         AiModelConfig(
           modelName: 'gemma2-9b-it',
           displayName: 'Gemma 2 9B (Backup)',
-          priority: 5,
+          priority: 7,
         ),
       ];
 

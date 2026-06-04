@@ -21,10 +21,8 @@ class AiService {
 
   /// Sends messages to Groq API with automatic model failover.
   Future<String> getChatResponse(List<Map<String, String>> messages) async {
-    final apiKey = await _secureStorage.getGroqApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('Groq API Key is not configured. Please configure it in settings.');
-    }
+    final groqApiKey = await _secureStorage.getGroqApiKey();
+    final geminiApiKey = await _secureStorage.getGeminiApiKey();
 
     // Get enabled models sorted by priority
     final models = await _db.isar.aiModelConfigs
@@ -41,14 +39,26 @@ class AiService {
 
     for (final modelConfig in models) {
       final modelName = modelConfig.modelName;
+      final isGemini = modelName.startsWith('gemini-');
+      
+      final currentApiKey = isGemini ? geminiApiKey : groqApiKey;
+      if (currentApiKey == null || currentApiKey.isEmpty) {
+        print('AI Service: API Key for $modelName is not configured. Skipping model...');
+        continue;
+      }
+
+      final apiUrl = isGemini 
+          ? 'https://generativelanguage.googleapis.com/v1beta/openai/v1/chat/completions'
+          : 'https://api.groq.com/openai/v1/chat/completions';
+
       try {
         print('AI Service: Trying model $modelName (${modelConfig.displayName})...');
         
         final response = await _dio.post(
-          'https://api.groq.com/openai/v1/chat/completions',
+          apiUrl,
           options: Options(
             headers: {
-              'Authorization': 'Bearer $apiKey',
+              'Authorization': 'Bearer $currentApiKey',
               'Content-Type': 'application/json',
             },
             sendTimeout: const Duration(seconds: 15),
@@ -63,8 +73,6 @@ class AiService {
 
         if (response.statusCode == 200) {
           final data = response.data;
-          // Groq returns JSON. Dio automatically parses if content-type is json.
-          // Depending on Dio configurations, it might be a Map or String.
           final Map<String, dynamic> jsonMap = data is String ? json.decode(data) : data;
           final content = jsonMap['choices'][0]['message']['content'] as String;
           print('AI Service: Success using model $modelName!');
@@ -80,18 +88,22 @@ class AiService {
         final isModelConfigError = responseStr.contains('decommissioned') || 
                                    responseStr.contains('deprecated') || 
                                    responseStr.contains('not found') || 
-                                   responseStr.contains('unknown model');
+                                   responseStr.contains('unknown model') ||
+                                   responseStr.contains('not_found') ||
+                                   responseStr.contains('invalid model');
 
-        // Failover if rate limited (429), server error (5xx), timeout, or model decommissioned/not found
+        // Failover if rate limited (429), auth error (401/403), server error (5xx), timeout, or model not found
         if (statusCode == 429 || 
+            statusCode == 401 ||
+            statusCode == 403 ||
             (statusCode != null && statusCode >= 500) || 
             e.type != DioExceptionType.badResponse ||
             isModelConfigError) {
-          print('AI Service: Model error, rate limit or network issue. Switching to fallback model...');
+          print('AI Service: Model/Auth error, rate limit or network issue. Switching to fallback model...');
           continue; // Try next model
         } else {
-          // If it's a bad request (400) or auth issue (401), we fail immediately rather than looping
-          throw Exception('Groq API error ($statusCode): ${e.message}. details: $responseData');
+          // If it's a bad request (400) or other client error, we fail immediately rather than looping
+          throw Exception('AI API error ($statusCode): ${e.message}. details: $responseData');
         }
       } catch (e) {
         print('AI Service: Unexpected error using model $modelName: $e');
@@ -102,9 +114,9 @@ class AiService {
 
     // If we exhausted all models, throw the last error or generic error
     if (lastError != null) {
-      throw Exception('All Groq models failed. Last error: ${lastError.message}');
+      throw Exception('All AI models failed. Last error: ${lastError.message}');
     } else {
-      throw Exception('Failed to get response from Groq API (all models exhausted).');
+      throw Exception('Failed to get response from AI API (all models exhausted).');
     }
   }
 

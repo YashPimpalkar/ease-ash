@@ -11,6 +11,7 @@ class SecureStorageService {
 
   // Keys constants
   static const _keyGroqApiKey = 'groq_api_key';
+  static const _keyGeminiApiKey = 'gemini_api_key';
   static const _keyMongoDbUri = 'mongodb_uri';
   static const _keyStartingBalance = 'starting_bank_balance';
 
@@ -22,6 +23,11 @@ class SecureStorageService {
     if (groqKey == null) {
       final envKey = dotenv.env['GROQ_API_KEY'] ?? '';
       await saveGroqApiKey(envKey);
+    }
+    final geminiKey = await getGeminiApiKey();
+    if (geminiKey == null) {
+      final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+      await saveGeminiApiKey(envKey);
     }
     final mongoUri = await getMongoDbUri();
     if (mongoUri == null) {
@@ -40,6 +46,15 @@ class SecureStorageService {
 
   Future<void> saveGroqApiKey(String value) async {
     await _storage.write(key: _keyGroqApiKey, value: value);
+  }
+
+  // Gemini API Key
+  Future<String?> getGeminiApiKey() async {
+    return await _storage.read(key: _keyGeminiApiKey);
+  }
+
+  Future<void> saveGeminiApiKey(String value) async {
+    await _storage.write(key: _keyGeminiApiKey, value: value);
   }
 
   // MongoDB URI

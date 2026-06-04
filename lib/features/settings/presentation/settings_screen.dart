@@ -14,6 +14,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _apiKeyController = TextEditingController();
+  final _geminiKeyController = TextEditingController();
   final _mongoUriController = TextEditingController();
   final _balanceController = TextEditingController();
   bool _isLoading = true;
@@ -28,6 +29,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _geminiKeyController.dispose();
     _mongoUriController.dispose();
     _balanceController.dispose();
     super.dispose();
@@ -36,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     final storage = ref.read(secureStorageServiceProvider);
     final key = await storage.getGroqApiKey() ?? '';
+    final geminiKey = await storage.getGeminiApiKey() ?? '';
     final uri = await storage.getMongoDbUri() ?? '';
     
     await ref.read(startingBalanceProvider.notifier).loadStartingBalance();
@@ -43,6 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() {
       _apiKeyController.text = key;
+      _geminiKeyController.text = geminiKey;
       _mongoUriController.text = uri;
       _balanceController.text = bal.toStringAsFixed(2);
       _isLoading = false;
@@ -53,6 +57,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final storage = ref.read(secureStorageServiceProvider);
     await storage.saveGroqApiKey(_apiKeyController.text.trim());
     _showSnackBar('Groq API Key saved successfully');
+  }
+
+  Future<void> _saveGeminiApiKey() async {
+    final storage = ref.read(secureStorageServiceProvider);
+    await storage.saveGeminiApiKey(_geminiKeyController.text.trim());
+    _showSnackBar('Gemini API Key saved successfully');
   }
 
   Future<void> _saveMongoUri() async {
@@ -160,6 +170,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 foregroundColor: Colors.white,
                               ),
                               onPressed: _saveApiKey,
+                              child: const Text('Save Key'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: AppTheme.glassCardDecoration(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Gemini API Key',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _geminiKeyController,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your API key',
+                              hintStyle: TextStyle(color: Colors.white24),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6C63FF),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _saveGeminiApiKey,
                               child: const Text('Save Key'),
                             ),
                           ),
