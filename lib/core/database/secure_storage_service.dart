@@ -31,7 +31,8 @@ class SecureStorageService {
     }
     final mongoUri = await getMongoDbUri();
     if (mongoUri == null) {
-      await saveMongoDbUri(defaultMongoUri);
+      final envUri = dotenv.env['MONGODB_URI'] ?? defaultMongoUri;
+      await saveMongoDbUri(envUri);
     }
     final startingBal = await getStartingBalance();
     if (startingBal == null) {
