@@ -173,11 +173,11 @@ class DatabaseService {
       await isar.gymWorkouts.putAll(workoutsToMigrate);
 
       // 5. DiaryEntries
-      final entriesToMigrate = await isar.diaryEntries.filter().userEmailIsNull().findAll();
+      final entriesToMigrate = await isar.diaryEntrys.filter().userEmailIsNull().findAll();
       for (final entry in entriesToMigrate) {
         entry.userEmail = cleanEmail;
       }
-      await isar.diaryEntries.putAll(entriesToMigrate);
+      await isar.diaryEntrys.putAll(entriesToMigrate);
     });
   }
 }
