@@ -14,6 +14,11 @@ class SecureStorageService {
   static const _keyGeminiApiKey = 'gemini_api_key';
   static const _keyMongoDbUri = 'mongodb_uri';
   static const _keyStartingBalance = 'starting_bank_balance';
+  static const _keyCurrentUserEmail = 'current_user_email';
+  static const _keyBiometricUserEmail = 'biometric_user_email';
+  static const _prefixUserPwHash = 'user_pw_hash_';
+  static const _prefixUserRole = 'user_role_';
+  static const _prefixUserBiometric = 'user_biometric_enabled_';
 
   // Default values provided by user
   static const String defaultMongoUri = 'mongodb+srv://secureher:secureher@cluster0.w9p685i.mongodb.net/easyash?appName=Cluster0';
@@ -75,6 +80,56 @@ class SecureStorageService {
 
   Future<void> saveStartingBalance(double value) async {
     await _storage.write(key: _keyStartingBalance, value: value.toString());
+  }
+
+  // Auth Helpers
+  Future<String?> getCurrentUserEmail() async {
+    return await _storage.read(key: _keyCurrentUserEmail);
+  }
+
+  Future<void> saveCurrentUserEmail(String? value) async {
+    if (value == null) {
+      await _storage.delete(key: _keyCurrentUserEmail);
+    } else {
+      await _storage.write(key: _keyCurrentUserEmail, value: value);
+    }
+  }
+
+  Future<String?> getBiometricUserEmail() async {
+    return await _storage.read(key: _keyBiometricUserEmail);
+  }
+
+  Future<void> saveBiometricUserEmail(String? value) async {
+    if (value == null) {
+      await _storage.delete(key: _keyBiometricUserEmail);
+    } else {
+      await _storage.write(key: _keyBiometricUserEmail, value: value);
+    }
+  }
+
+  Future<String?> getUserPasswordHash(String email) async {
+    return await _storage.read(key: '$_prefixUserPwHash${email.toLowerCase()}');
+  }
+
+  Future<void> saveUserPasswordHash(String email, String hash) async {
+    await _storage.write(key: '$_prefixUserPwHash${email.toLowerCase()}', value: hash);
+  }
+
+  Future<String?> getUserRole(String email) async {
+    return await _storage.read(key: '$_prefixUserRole${email.toLowerCase()}');
+  }
+
+  Future<void> saveUserRole(String email, String role) async {
+    await _storage.write(key: '$_prefixUserRole${email.toLowerCase()}', value: role);
+  }
+
+  Future<bool> isBiometricEnabled(String email) async {
+    final val = await _storage.read(key: '$_prefixUserBiometric${email.toLowerCase()}');
+    return val == 'true';
+  }
+
+  Future<void> saveBiometricEnabled(String email, bool enabled) async {
+    await _storage.write(key: '$_prefixUserBiometric${email.toLowerCase()}', value: enabled.toString());
   }
 
   // Clear all data

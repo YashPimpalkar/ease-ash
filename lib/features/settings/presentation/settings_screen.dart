@@ -4,6 +4,7 @@ import '../../../core/database/secure_storage_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
 import 'ai_models_screen.dart';
+import '../../auth/presentation/auth_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -106,6 +107,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final isAdmin = authState.role == 'admin';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('App Settings'),
@@ -121,160 +125,162 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               : ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
-                    Text(
-                      'AI Configuration',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildSettingCard(
-                      context,
-                      title: 'Groq API Models Manager',
-                      subtitle: 'Manage priorities, enable/disable & custom models fallback list',
-                      icon: Icons.psychology,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AiModelsScreen()),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.glassCardDecoration(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Groq API Key',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _apiKeyController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your API key',
-                              hintStyle: TextStyle(color: Colors.white24),
-                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6C63FF),
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _saveApiKey,
-                              child: const Text('Save Key'),
-                            ),
-                          ),
-                        ],
+                    if (isAdmin) ...[
+                      Text(
+                        'AI Configuration',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.glassCardDecoration(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Gemini API Key',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _geminiKeyController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your API key',
-                              hintStyle: TextStyle(color: Colors.white24),
-                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6C63FF),
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _saveGeminiApiKey,
-                              child: const Text('Save Key'),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      _buildSettingCard(
+                        context,
+                        title: 'Groq API Models Manager',
+                        subtitle: 'Manage priorities, enable/disable & custom models fallback list',
+                        icon: Icons.psychology,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AiModelsScreen()),
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Data Synchronisation',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.glassCardDecoration(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'MongoDB Connection URI',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _mongoUriController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            maxLines: 2,
-                            decoration: const InputDecoration(
-                              hintText: 'mongodb+srv://user:pass@cluster...',
-                              hintStyle: TextStyle(color: Colors.white24),
-                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: AppTheme.glassCardDecoration(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Groq API Key',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00E676),
-                                  foregroundColor: Colors.black,
-                                ),
-                                onPressed: _isSyncing ? null : _triggerSync,
-                                icon: _isSyncing
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.sync),
-                                label: Text(_isSyncing ? 'Syncing...' : 'Sync Database'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _apiKeyController,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter your API key',
+                                hintStyle: TextStyle(color: Colors.white24),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
                               ),
-                              ElevatedButton(
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF6C63FF),
                                   foregroundColor: Colors.white,
                                 ),
-                                onPressed: _saveMongoUri,
-                                child: const Text('Save URI'),
+                                onPressed: _saveApiKey,
+                                child: const Text('Save Key'),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: AppTheme.glassCardDecoration(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Gemini API Key',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _geminiKeyController,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter your API key',
+                                hintStyle: TextStyle(color: Colors.white24),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6C63FF),
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: _saveGeminiApiKey,
+                                child: const Text('Save Key'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Data Synchronisation',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: AppTheme.glassCardDecoration(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'MongoDB Connection URI',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _mongoUriController,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                hintText: 'mongodb+srv://user:pass@cluster...',
+                                hintStyle: TextStyle(color: Colors.white24),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  onPressed: _isSyncing ? null : _triggerSync,
+                                  icon: _isSyncing
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.sync),
+                                  label: Text(_isSyncing ? 'Syncing...' : 'Sync Database'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF6C63FF),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: _saveMongoUri,
+                                  child: const Text('Save URI'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                     Text(
                       'Personalization',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
@@ -317,12 +323,82 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Security',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: AppTheme.glassCardDecoration(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Fingerprint / Biometric Login',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Enable fingerprint login',
+                              style: TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                            subtitle: Text(
+                              authState.isBiometricAvailable
+                                  ? 'Log in quickly using your device fingerprint scanner'
+                                  : 'Biometrics not available or not set up on this device',
+                              style: const TextStyle(color: Colors.white38, fontSize: 12),
+                            ),
+                            value: authState.isBiometricEnabledForUser,
+                            activeColor: const Color(0xFF00E6FF),
+                            onChanged: authState.isBiometricAvailable
+                                ? (value) async {
+                                    final success = await ref
+                                        .read(authProvider.notifier)
+                                        .toggleBiometrics(value);
+                                    if (success) {
+                                      _showSnackBar(value
+                                          ? 'Fingerprint login enabled successfully'
+                                          : 'Fingerprint login disabled');
+                                    } else {
+                                      _showSnackBar('Failed to update fingerprint settings');
+                                    }
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                      onPressed: () {
+                        ref.read(authProvider.notifier).logout();
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text(
+                        'Log Out',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }  }
 
   Widget _buildSettingCard(
     BuildContext context, {

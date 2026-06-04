@@ -6,6 +6,9 @@ import 'core/database/secure_storage_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/dashboard/presentation/navigation_shell.dart';
 
+import 'features/auth/presentation/auth_provider.dart';
+import 'features/auth/presentation/login_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -29,16 +32,20 @@ void main() async {
   );
 }
 
-class EaseAshApp extends StatelessWidget {
+class EaseAshApp extends ConsumerWidget {
   const EaseAshApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
     return MaterialApp(
       title: 'ease ash',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const NavigationShell(),
+      home: authState.status == AuthStatus.authenticated
+          ? const NavigationShell()
+          : const LoginScreen(),
     );
   }
 }
