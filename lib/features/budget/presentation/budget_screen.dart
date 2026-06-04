@@ -4,9 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/database/database_service.dart';
 import '../../../core/database/secure_storage_service.dart';
 import '../../../core/services/ai_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/transaction_model.dart';
-import 'package:isar/isar.dart';
 import '../../auth/presentation/auth_provider.dart';
 
 
@@ -41,7 +41,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     String category,
     DateTime date,
   ) async {
-    final db = ref.read(databaseServiceProvider);
     final email = ref.read(authProvider).email ?? '';
     final tx = Transaction(
       title: title.trim(),
@@ -54,16 +53,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       userEmail: email,
     );
 
-    await db.isar.writeTxn(() async {
-      await db.isar.transactions.put(tx);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveTransaction(tx);
   }
 
   Future<void> _deleteTransaction(int id) async {
-    final db = ref.read(databaseServiceProvider);
-    await db.isar.writeTxn(() async {
-      await db.isar.transactions.delete(id);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.deleteTransaction(id);
   }
 
   Future<void> _getAiCoachFeedback(double currentBal, double income, double expense, List<Transaction> transactions) async {

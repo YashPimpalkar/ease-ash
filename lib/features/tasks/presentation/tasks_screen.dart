@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/task_model.dart';
 import 'package:isar/isar.dart';
@@ -59,9 +60,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         ),
       ];
 
-      await db.isar.writeTxn(() async {
-        await db.isar.tasks.putAll(defaultHabits);
-      });
+      final dataService = ref.read(dataServiceProvider);
+      for (final habit in defaultHabits) {
+        await dataService.saveTask(habit);
+      }
 
       final updatedTasks = await db.isar.tasks.filter().userEmailEqualTo(email).sortByDueDate().findAll();
       setState(() {
@@ -78,35 +80,28 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   }
 
   Future<void> _toggleTaskCompleted(Task task) async {
-    final db = ref.read(databaseServiceProvider);
     task.isCompleted = !task.isCompleted;
-    task.isSynced = false; // Mark for MongoDB upload
-    await db.isar.writeTxn(() async {
-      await db.isar.tasks.put(task);
-    });
+    task.isSynced = false;
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveTask(task);
     _loadTasks();
   }
 
   Future<void> _toggleSubtaskCompleted(Task task, int subtaskIndex) async {
-    final db = ref.read(databaseServiceProvider);
-    
     // Copy subtask completion status to modify it
     final newList = List<bool>.from(task.subtaskCompleted);
     newList[subtaskIndex] = !newList[subtaskIndex];
     task.subtaskCompleted = newList;
     task.isSynced = false;
 
-    await db.isar.writeTxn(() async {
-      await db.isar.tasks.put(task);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveTask(task);
     _loadTasks();
   }
 
   Future<void> _deleteTask(int id) async {
-    final db = ref.read(databaseServiceProvider);
-    await db.isar.writeTxn(() async {
-      await db.isar.tasks.delete(id);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.deleteTask(id);
     _loadTasks();
   }
 
@@ -118,7 +113,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     String category,
     List<String> subtasks,
   ) async {
-    final db = ref.read(databaseServiceProvider);
     final email = ref.read(authProvider).email ?? '';
     final task = Task(
       title: title.trim(),
@@ -133,9 +127,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       userEmail: email,
     );
 
-    await db.isar.writeTxn(() async {
-      await db.isar.tasks.put(task);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveTask(task);
     _loadTasks();
   }
 

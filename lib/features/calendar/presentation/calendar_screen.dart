@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../core/database/database_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/calendar_event_model.dart';
 import 'package:isar/isar.dart';
@@ -80,7 +81,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     String colorHex,
     String recurrence,
   ) async {
-    final db = ref.read(databaseServiceProvider);
     final email = ref.read(authProvider).email ?? '';
     final event = CalendarEvent(
       title: title.trim(),
@@ -94,17 +94,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       userEmail: email,
     );
 
-    await db.isar.writeTxn(() async {
-      await db.isar.calendarEvents.put(event);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveCalendarEvent(event);
     _loadEvents();
   }
 
   Future<void> _deleteEvent(int id) async {
-    final db = ref.read(databaseServiceProvider);
-    await db.isar.writeTxn(() async {
-      await db.isar.calendarEvents.delete(id);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.deleteCalendarEvent(id);
     _loadEvents();
   }
 

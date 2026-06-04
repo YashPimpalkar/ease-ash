@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/workout_model.dart';
 import 'workout_active_screen.dart';
@@ -54,10 +55,8 @@ class _GymScreenState extends ConsumerState<GymScreen> {
   }
 
   Future<void> _deleteWorkout(int id) async {
-    final db = ref.read(databaseServiceProvider);
-    await db.isar.writeTxn(() async {
-      await db.isar.gymWorkouts.delete(id);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.deleteGymWorkout(id);
     _loadPastWorkouts();
   }
 

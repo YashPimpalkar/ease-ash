@@ -86,6 +86,15 @@ class SecureStorageService {
     await _storage.write(key: key, value: value.toString());
   }
 
+  // Username
+  Future<String?> getUsername(String email) async {
+    return await _storage.read(key: 'username_${email.toLowerCase()}');
+  }
+
+  Future<void> saveUsername(String email, String username) async {
+    await _storage.write(key: 'username_${email.toLowerCase()}', value: username);
+  }
+
   // Auth Helpers
   Future<String?> getCurrentUserEmail() async {
     return await _storage.read(key: _keyCurrentUserEmail);

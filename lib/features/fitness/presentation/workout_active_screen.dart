@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/database/database_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/workout_model.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -157,7 +157,6 @@ class _WorkoutActiveScreenState extends ConsumerState<WorkoutActiveScreen> {
   }
 
   Future<void> _finishWorkout() async {
-    final db = ref.read(databaseServiceProvider);
     final email = ref.read(authProvider).email ?? '';
     
     // Create new GymWorkout record
@@ -169,9 +168,8 @@ class _WorkoutActiveScreenState extends ConsumerState<WorkoutActiveScreen> {
       userEmail: email,
     );
 
-    await db.isar.writeTxn(() async {
-      await db.isar.gymWorkouts.put(workout);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveGymWorkout(workout);
 
     if (mounted) {
       Navigator.pop(context, true);

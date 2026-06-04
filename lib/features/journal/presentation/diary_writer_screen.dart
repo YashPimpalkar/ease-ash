@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/database/database_service.dart';
 import '../../../core/services/ai_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/diary_model.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -63,8 +63,7 @@ class _DiaryWriterScreenState extends ConsumerState<DiaryWriterScreen> {
     final aiService = ref.read(aiServiceProvider);
     final feedback = await aiService.analyzeDiaryEntry(title, content);
 
-    // Write to Isar
-    final db = ref.read(databaseServiceProvider);
+    // Write via DataService (online-first)
     final email = ref.read(authProvider).email ?? '';
     final entry = DiaryEntry(
       title: title,
@@ -77,9 +76,8 @@ class _DiaryWriterScreenState extends ConsumerState<DiaryWriterScreen> {
       userEmail: email,
     );
 
-    await db.isar.writeTxn(() async {
-      await db.diaryEntries.put(entry);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.saveDiaryEntry(entry);
 
     if (mounted) {
       Navigator.pop(context, true);

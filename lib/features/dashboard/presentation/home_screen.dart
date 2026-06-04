@@ -8,7 +8,6 @@ import '../../journal/presentation/diary_screen.dart';
 import '../../fitness/presentation/gym_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'navigation_state.dart';
-import 'package:isar/isar.dart';
 import '../../auth/presentation/auth_provider.dart';
 
 
@@ -27,18 +26,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authProvider);
     final email = auth.email ?? '';
     String displayName = 'User';
-    if (email.isNotEmpty) {
-      if (email.toLowerCase() == 'yashpimpalkar214@gmail.com') {
-        displayName = 'Yash';
-      } else if (email.contains('@')) {
+    if (auth.username != null && auth.username!.isNotEmpty) {
+      displayName = auth.username!;
+    } else if (email.isNotEmpty) {
+      if (email.contains('@')) {
         final prefix = email.split('@')[0];
         if (prefix.isNotEmpty) {
           displayName = prefix[0].toUpperCase() + prefix.substring(1);
-        } else {
-          displayName = email;
         }
-      } else {
-        displayName = email;
       }
     }
 

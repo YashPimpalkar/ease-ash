@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:crypto/crypto.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import '../../../core/database/secure_storage_service.dart';
 import '../../../core/database/database_service.dart';
 
@@ -15,6 +16,7 @@ class AuthState {
   final String? error;
   final bool isBiometricAvailable;
   final bool isBiometricEnabledForUser;
+  final String? username;
 
   AuthState({
     required this.status,
@@ -23,6 +25,7 @@ class AuthState {
     this.error,
     this.isBiometricAvailable = false,
     this.isBiometricEnabledForUser = false,
+    this.username,
   });
 
   AuthState copyWith({
@@ -32,6 +35,7 @@ class AuthState {
     String? error,
     bool? isBiometricAvailable,
     bool? isBiometricEnabledForUser,
+    String? username,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -40,6 +44,7 @@ class AuthState {
       error: error ?? this.error,
       isBiometricAvailable: isBiometricAvailable ?? this.isBiometricAvailable,
       isBiometricEnabledForUser: isBiometricEnabledForUser ?? this.isBiometricEnabledForUser,
+      username: username ?? this.username,
     );
   }
 }
@@ -69,7 +74,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         }
 
         final isBioEnabled = await _storage.isBiometricEnabled(email);
+        final username = await _storage.getUsername(email);
         await _db.migrateLegacyData(email);
+        syncUsernameFromMongo(email);
 
         state = AuthState(
           status: AuthStatus.authenticated,
@@ -77,6 +84,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           role: role,
           isBiometricAvailable: isBioAvailable,
           isBiometricEnabledForUser: isBioEnabled,
+          username: username,
         );
       } else {
         state = AuthState(
@@ -107,13 +115,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
           await _storage.saveCurrentUserEmail(cleanEmail);
           await _storage.saveUserRole(cleanEmail, 'admin');
           final isBioEnabled = await _storage.isBiometricEnabled(cleanEmail);
+          final username = await _storage.getUsername(cleanEmail);
           await _db.migrateLegacyData(cleanEmail);
+          syncUsernameFromMongo(cleanEmail);
           
           state = state.copyWith(
             status: AuthStatus.authenticated,
             email: cleanEmail,
             role: 'admin',
             isBiometricEnabledForUser: isBioEnabled,
+            username: username,
           );
           return true;
         } else {
@@ -134,13 +145,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _storage.saveCurrentUserEmail(cleanEmail);
         final role = await _storage.getUserRole(cleanEmail) ?? 'user';
         final isBioEnabled = await _storage.isBiometricEnabled(cleanEmail);
+        final username = await _storage.getUsername(cleanEmail);
         await _db.migrateLegacyData(cleanEmail);
+        syncUsernameFromMongo(cleanEmail);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
           email: cleanEmail,
           role: role,
           isBiometricEnabledForUser: isBioEnabled,
+          username: username,
         );
         return true;
       } else {
@@ -190,6 +204,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: cleanEmail,
         role: 'user',
         isBiometricEnabledForUser: false,
+        username: null,
       );
       return true;
     } catch (e) {
@@ -224,13 +239,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         } else {
           role = await _storage.getUserRole(bioUser) ?? 'user';
         }
+        final username = await _storage.getUsername(bioUser);
         await _db.migrateLegacyData(bioUser);
+        syncUsernameFromMongo(bioUser);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
           email: bioUser,
           role: role,
           isBiometricEnabledForUser: true,
+          username: username,
         );
         return true;
       }
@@ -278,6 +296,47 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(error: 'Failed to configure biometrics');
       return false;
+    }
+  }
+
+  Future<void> updateUsername(String newName) async {
+    final email = state.email;
+    if (email == null) return;
+    
+    await _storage.saveUsername(email, newName.trim());
+    state = state.copyWith(username: newName.trim());
+    
+    try {
+      final mongoUri = await _storage.getMongoDbUri() ?? SecureStorageService.defaultMongoUri;
+      final db = await mongo.Db.create(mongoUri);
+      await db.open();
+      final coll = db.collection('users');
+      await coll.replaceOne(
+        {'email': email.toLowerCase()},
+        {'email': email.toLowerCase(), 'username': newName.trim()},
+        upsert: true,
+      );
+      await db.close();
+    } catch (e) {
+      print('AuthNotifier: Failed to save username to MongoDB: $e');
+    }
+  }
+
+  Future<void> syncUsernameFromMongo(String email) async {
+    try {
+      final mongoUri = await _storage.getMongoDbUri() ?? SecureStorageService.defaultMongoUri;
+      final db = await mongo.Db.create(mongoUri);
+      await db.open();
+      final coll = db.collection('users');
+      final doc = await coll.findOne({'email': email.toLowerCase()});
+      await db.close();
+      if (doc != null && doc['username'] != null) {
+        final username = doc['username'] as String;
+        await _storage.saveUsername(email, username);
+        state = state.copyWith(username: username);
+      }
+    } catch (e) {
+      print('AuthNotifier: Failed to fetch username from MongoDB: $e');
     }
   }
 

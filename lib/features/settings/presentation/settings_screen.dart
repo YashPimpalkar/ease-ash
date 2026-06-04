@@ -18,6 +18,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _geminiKeyController = TextEditingController();
   final _mongoUriController = TextEditingController();
   final _balanceController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _isLoading = true;
   bool _isSyncing = false;
 
@@ -33,6 +34,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _geminiKeyController.dispose();
     _mongoUriController.dispose();
     _balanceController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -45,11 +47,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await ref.read(startingBalanceProvider.notifier).loadStartingBalance();
     final bal = ref.read(startingBalanceProvider);
 
+    final authState = ref.read(authProvider);
+    final currentUsername = authState.username ?? '';
+
     setState(() {
       _apiKeyController.text = key;
       _geminiKeyController.text = geminiKey;
       _mongoUriController.text = uri;
       _balanceController.text = bal.toStringAsFixed(2);
+      _usernameController.text = currentUsername;
       _isLoading = false;
     });
   }
@@ -76,6 +82,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final val = double.tryParse(_balanceController.text) ?? 0.0;
     await ref.read(startingBalanceProvider.notifier).updateStartingBalance(val);
     _showSnackBar('Starting balance configured');
+  }
+
+  Future<void> _saveUsername() async {
+    final name = _usernameController.text.trim();
+    await ref.read(authProvider.notifier).updateUsername(name);
+    _showSnackBar('Display name updated');
   }
 
   Future<void> _triggerSync() async {
@@ -286,6 +298,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
                     ),
                     const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: AppTheme.glassCardDecoration(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Display Name',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'This is the name shown on the Dashboard greeting',
+                            style: TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _usernameController,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your display name',
+                              hintStyle: TextStyle(color: Colors.white24),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6C63FF),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _saveUsername,
+                              child: const Text('Save Name'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: AppTheme.glassCardDecoration(),

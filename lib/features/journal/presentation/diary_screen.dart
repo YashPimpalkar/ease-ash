@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_service.dart';
+import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/diary_model.dart';
 import 'diary_writer_screen.dart';
@@ -36,10 +37,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
   }
 
   Future<void> _deleteEntry(int id) async {
-    final db = ref.read(databaseServiceProvider);
-    await db.isar.writeTxn(() async {
-      await db.diaryEntries.delete(id);
-    });
+    final dataService = ref.read(dataServiceProvider);
+    await dataService.deleteDiaryEntry(id);
     _loadEntries();
   }
 
