@@ -543,6 +543,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'calendar_fab',
         backgroundColor: const Color(0xFF00E6FF),
         onPressed: _showAddEventSheet,
         child: const Icon(Icons.add, color: Colors.black),

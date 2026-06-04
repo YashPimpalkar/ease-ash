@@ -210,6 +210,7 @@ class _AiModelsScreenState extends ConsumerState<AiModelsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'ai_models_fab',
         backgroundColor: const Color(0xFF00E6FF),
         onPressed: _showAddDialog,
         child: const Icon(Icons.add, color: Colors.black),

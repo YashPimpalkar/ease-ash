@@ -307,6 +307,7 @@ class _GymScreenState extends ConsumerState<GymScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'gym_fab',
         backgroundColor: const Color(0xFF00E676),
         onPressed: _showAddTemplateDialog,
         child: const Icon(Icons.add, color: Colors.black),

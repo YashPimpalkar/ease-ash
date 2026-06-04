@@ -675,6 +675,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'budget_fab',
         backgroundColor: const Color(0xFF00E676),
         onPressed: _showAddTransactionSheet,
         child: const Icon(Icons.add, color: Colors.black),

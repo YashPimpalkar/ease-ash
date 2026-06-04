@@ -607,6 +607,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'tasks_fab',
         backgroundColor: const Color(0xFFFF8A00),
         onPressed: _showAddTaskSheet,
         child: const Icon(Icons.add, color: Colors.white),

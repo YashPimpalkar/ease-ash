@@ -242,6 +242,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'diary_fab',
         backgroundColor: const Color(0xFF6C63FF),
         onPressed: _openEntryWriter,
         child: const Icon(Icons.add, color: Colors.white),
