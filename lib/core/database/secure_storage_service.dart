@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +17,9 @@ class SecureStorageService {
   static const _keyGeminiApiKey = 'gemini_api_key';
   static const _keyMongoDbUri = 'mongodb_uri';
   static const _keyStartingBalance = 'starting_bank_balance';
+  static const _keyStartingBalanceDate = 'starting_bank_balance_date';
+  static const _keyTitleCategoryMappings = 'title_category_mappings';
+  static const _keyBudgetLimits = 'budget_limits';
   static const _keyCurrentUserEmail = 'current_user_email';
   static const _keyBiometricUserEmail = 'biometric_user_email';
   static const _prefixUserPwHash = 'user_pw_hash_';
@@ -86,6 +90,34 @@ class SecureStorageService {
     await _storage.write(key: key, value: value.toString());
   }
 
+  Future<DateTime?> getStartingBalanceDate([String? email]) async {
+    final key = email == null ? _keyStartingBalanceDate : '${_keyStartingBalanceDate}_${email.toLowerCase()}';
+    final val = await _storage.read(key: key);
+    return val != null ? DateTime.tryParse(val) : null;
+  }
+
+  Future<void> saveStartingBalanceDate(DateTime value, [String? email]) async {
+    final key = email == null ? _keyStartingBalanceDate : '${_keyStartingBalanceDate}_${email.toLowerCase()}';
+    await _storage.write(key: key, value: value.toIso8601String());
+  }
+
+  Future<Map<String, String>> getTitleCategoryMappings([String? email]) async {
+    final key = email == null ? _keyTitleCategoryMappings : '${_keyTitleCategoryMappings}_${email.toLowerCase()}';
+    final val = await _storage.read(key: key);
+    if (val == null) return {};
+    try {
+      final decoded = jsonDecode(val) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(k, v.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> saveTitleCategoryMappings(Map<String, String> mappings, [String? email]) async {
+    final key = email == null ? _keyTitleCategoryMappings : '${_keyTitleCategoryMappings}_${email.toLowerCase()}';
+    await _storage.write(key: key, value: jsonEncode(mappings));
+  }
+
   // Username
   Future<String?> getUsername(String email) async {
     return await _storage.read(key: 'username_${email.toLowerCase()}');
@@ -145,6 +177,24 @@ class SecureStorageService {
     await _storage.write(key: '$_prefixUserBiometric${email.toLowerCase()}', value: enabled.toString());
   }
 
+  // Budget Limits
+  Future<Map<String, double>?> getBudgetLimits([String? email]) async {
+    final key = email == null ? _keyBudgetLimits : '${_keyBudgetLimits}_${email.toLowerCase()}';
+    final val = await _storage.read(key: key);
+    if (val == null) return null;
+    try {
+      final decoded = jsonDecode(val) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(k, (v as num).toDouble()));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveBudgetLimits(Map<String, double> limits, [String? email]) async {
+    final key = email == null ? _keyBudgetLimits : '${_keyBudgetLimits}_${email.toLowerCase()}';
+    await _storage.write(key: key, value: jsonEncode(limits));
+  }
+
   // Clear all data
   Future<void> clearAll() async {
     await _storage.deleteAll();
@@ -179,5 +229,135 @@ class StartingBalanceNotifier extends StateNotifier<double> {
     if (_email.isEmpty) return;
     await _storage.saveStartingBalance(value, _email);
     state = value;
+  }
+}
+
+final startingBalanceDateProvider = StateNotifierProvider<StartingBalanceDateNotifier, DateTime>((ref) {
+  final storage = ref.watch(secureStorageServiceProvider);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return StartingBalanceDateNotifier(storage, email);
+});
+
+class StartingBalanceDateNotifier extends StateNotifier<DateTime> {
+  final SecureStorageService _storage;
+  final String _email;
+
+  static final DateTime defaultDate = DateTime(2020, 1, 1);
+
+  StartingBalanceDateNotifier(this._storage, this._email) : super(defaultDate) {
+    loadStartingBalanceDate();
+  }
+
+  Future<void> loadStartingBalanceDate() async {
+    if (_email.isEmpty) {
+      state = defaultDate;
+      return;
+    }
+    final date = await _storage.getStartingBalanceDate(_email);
+    state = date ?? defaultDate;
+  }
+
+  Future<void> updateStartingBalanceDate(DateTime value) async {
+    if (_email.isEmpty) return;
+    await _storage.saveStartingBalanceDate(value, _email);
+    state = value;
+  }
+}
+
+final titleCategoryMappingsProvider = StateNotifierProvider<TitleCategoryMappingsNotifier, Map<String, String>>((ref) {
+  final storage = ref.watch(secureStorageServiceProvider);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return TitleCategoryMappingsNotifier(storage, email);
+});
+
+class TitleCategoryMappingsNotifier extends StateNotifier<Map<String, String>> {
+  final SecureStorageService _storage;
+  final String _email;
+
+  TitleCategoryMappingsNotifier(this._storage, this._email) : super({}) {
+    loadMappings();
+  }
+
+  Future<void> loadMappings() async {
+    if (_email.isEmpty) return;
+    final maps = await _storage.getTitleCategoryMappings(_email);
+    state = maps;
+  }
+
+  Future<void> updateMapping(String title, String category) async {
+    if (_email.isEmpty) return;
+    final updated = Map<String, String>.from(state);
+    updated[title.toLowerCase().trim()] = category;
+    state = updated;
+    await _storage.saveTitleCategoryMappings(state, _email);
+  }
+
+  Future<void> removeMapping(String title) async {
+    if (_email.isEmpty) return;
+    final updated = Map<String, String>.from(state);
+    updated.remove(title.toLowerCase().trim());
+    state = updated;
+    await _storage.saveTitleCategoryMappings(state, _email);
+  }
+}
+
+final budgetLimitsProvider = StateNotifierProvider<BudgetLimitsNotifier, Map<String, double>>((ref) {
+  final storage = ref.watch(secureStorageServiceProvider);
+  final auth = ref.watch(authProvider);
+  final email = auth.email ?? '';
+  return BudgetLimitsNotifier(storage, email);
+});
+
+class BudgetLimitsNotifier extends StateNotifier<Map<String, double>> {
+  final SecureStorageService _storage;
+  final String _email;
+
+  static const Map<String, double> _defaultLimits = {
+    'Food': 5000.0,
+    'Entertainment': 3000.0,
+    'Utilities': 8000.0,
+    'Rent': 15000.0,
+    'Gym': 2000.0,
+    'Transport': 3000.0,
+    'Other': 4000.0,
+  };
+
+  BudgetLimitsNotifier(this._storage, this._email) : super(_defaultLimits) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_email.isEmpty) return;
+    final saved = await _storage.getBudgetLimits(_email);
+    if (saved != null && saved.isNotEmpty) {
+      state = saved;
+    } else {
+      // Persist defaults on first load
+      await _storage.saveBudgetLimits(_defaultLimits, _email);
+    }
+  }
+
+  Future<void> addCategory(String name, double amount) async {
+    final updated = Map<String, double>.from(state);
+    updated[name] = amount;
+    state = updated;
+    await _storage.saveBudgetLimits(state, _email);
+  }
+
+  Future<void> updateCategory(String oldName, String newName, double amount) async {
+    final updated = Map<String, double>.from(state);
+    if (oldName != newName) updated.remove(oldName);
+    updated[newName] = amount;
+    state = updated;
+    await _storage.saveBudgetLimits(state, _email);
+  }
+
+  Future<void> deleteCategory(String name) async {
+    final updated = Map<String, double>.from(state);
+    updated.remove(name);
+    state = updated;
+    await _storage.saveBudgetLimits(state, _email);
   }
 }

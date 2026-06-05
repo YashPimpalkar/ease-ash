@@ -26,6 +26,9 @@ class Transaction {
   @Index()
   String? userEmail;
 
+  @Index(unique: true, replace: true)
+  String? smsRefNo;
+
   Transaction({
     this.id = Isar.autoIncrement,
     required this.title,
@@ -36,5 +39,6 @@ class Transaction {
     required this.date,
     this.isSynced = false,
     this.userEmail,
+    this.smsRefNo,
   });
 }

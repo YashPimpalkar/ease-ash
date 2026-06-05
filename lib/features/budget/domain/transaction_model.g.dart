@@ -47,13 +47,18 @@ const TransactionSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'title': PropertySchema(
+    r'smsRefNo': PropertySchema(
       id: 6,
+      name: r'smsRefNo',
+      type: IsarType.string,
+    ),
+    r'title': PropertySchema(
+      id: 7,
       name: r'title',
       type: IsarType.string,
     ),
     r'userEmail': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'userEmail',
       type: IsarType.string,
     )
@@ -115,6 +120,19 @@ const TransactionSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'smsRefNo': IndexSchema(
+      id: -6764052890420482132,
+      name: r'smsRefNo',
+      unique: true,
+      replace: true,
+      properties: [
+        IndexPropertySchema(
+          name: r'smsRefNo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -134,6 +152,12 @@ int _transactionEstimateSize(
   bytesCount += 3 + object.category.length * 3;
   {
     final value = object.description;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.smsRefNo;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -160,8 +184,9 @@ void _transactionSerialize(
   writer.writeString(offsets[3], object.description);
   writer.writeBool(offsets[4], object.isExpense);
   writer.writeBool(offsets[5], object.isSynced);
-  writer.writeString(offsets[6], object.title);
-  writer.writeString(offsets[7], object.userEmail);
+  writer.writeString(offsets[6], object.smsRefNo);
+  writer.writeString(offsets[7], object.title);
+  writer.writeString(offsets[8], object.userEmail);
 }
 
 Transaction _transactionDeserialize(
@@ -178,8 +203,9 @@ Transaction _transactionDeserialize(
     id: id,
     isExpense: reader.readBool(offsets[4]),
     isSynced: reader.readBoolOrNull(offsets[5]) ?? false,
-    title: reader.readString(offsets[6]),
-    userEmail: reader.readStringOrNull(offsets[7]),
+    smsRefNo: reader.readStringOrNull(offsets[6]),
+    title: reader.readString(offsets[7]),
+    userEmail: reader.readStringOrNull(offsets[8]),
   );
   return object;
 }
@@ -204,8 +230,10 @@ P _transactionDeserializeProp<P>(
     case 5:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -223,6 +251,61 @@ List<IsarLinkBase<dynamic>> _transactionGetLinks(Transaction object) {
 void _transactionAttach(
     IsarCollection<dynamic> col, Id id, Transaction object) {
   object.id = id;
+}
+
+extension TransactionByIndex on IsarCollection<Transaction> {
+  Future<Transaction?> getBySmsRefNo(String? smsRefNo) {
+    return getByIndex(r'smsRefNo', [smsRefNo]);
+  }
+
+  Transaction? getBySmsRefNoSync(String? smsRefNo) {
+    return getByIndexSync(r'smsRefNo', [smsRefNo]);
+  }
+
+  Future<bool> deleteBySmsRefNo(String? smsRefNo) {
+    return deleteByIndex(r'smsRefNo', [smsRefNo]);
+  }
+
+  bool deleteBySmsRefNoSync(String? smsRefNo) {
+    return deleteByIndexSync(r'smsRefNo', [smsRefNo]);
+  }
+
+  Future<List<Transaction?>> getAllBySmsRefNo(List<String?> smsRefNoValues) {
+    final values = smsRefNoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'smsRefNo', values);
+  }
+
+  List<Transaction?> getAllBySmsRefNoSync(List<String?> smsRefNoValues) {
+    final values = smsRefNoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'smsRefNo', values);
+  }
+
+  Future<int> deleteAllBySmsRefNo(List<String?> smsRefNoValues) {
+    final values = smsRefNoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'smsRefNo', values);
+  }
+
+  int deleteAllBySmsRefNoSync(List<String?> smsRefNoValues) {
+    final values = smsRefNoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'smsRefNo', values);
+  }
+
+  Future<Id> putBySmsRefNo(Transaction object) {
+    return putByIndex(r'smsRefNo', object);
+  }
+
+  Id putBySmsRefNoSync(Transaction object, {bool saveLinks = true}) {
+    return putByIndexSync(r'smsRefNo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllBySmsRefNo(List<Transaction> objects) {
+    return putAllByIndex(r'smsRefNo', objects);
+  }
+
+  List<Id> putAllBySmsRefNoSync(List<Transaction> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'smsRefNo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension TransactionQueryWhereSort
@@ -558,6 +641,72 @@ extension TransactionQueryWhere
               indexName: r'userEmail',
               lower: [],
               upper: [userEmail],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterWhereClause> smsRefNoIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'smsRefNo',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterWhereClause>
+      smsRefNoIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'smsRefNo',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterWhereClause> smsRefNoEqualTo(
+      String? smsRefNo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'smsRefNo',
+        value: [smsRefNo],
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterWhereClause> smsRefNoNotEqualTo(
+      String? smsRefNo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'smsRefNo',
+              lower: [],
+              upper: [smsRefNo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'smsRefNo',
+              lower: [smsRefNo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'smsRefNo',
+              lower: [smsRefNo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'smsRefNo',
+              lower: [],
+              upper: [smsRefNo],
               includeUpper: false,
             ));
       }
@@ -1045,6 +1194,159 @@ extension TransactionQueryFilter
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'smsRefNo',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'smsRefNo',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsRefNoEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsRefNoBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'smsRefNo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'smsRefNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsRefNoMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'smsRefNo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'smsRefNo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsRefNoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'smsRefNo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterFilterCondition> titleEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1412,6 +1714,18 @@ extension TransactionQuerySortBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortBySmsRefNo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsRefNo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortBySmsRefNoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsRefNo', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1523,6 +1837,18 @@ extension TransactionQuerySortThenBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenBySmsRefNo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsRefNo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenBySmsRefNoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsRefNo', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1588,6 +1914,13 @@ extension TransactionQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QDistinct> distinctBySmsRefNo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'smsRefNo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QDistinct> distinctByTitle(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1644,6 +1977,12 @@ extension TransactionQueryProperty
   QueryBuilder<Transaction, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<Transaction, String?, QQueryOperations> smsRefNoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'smsRefNo');
     });
   }
 

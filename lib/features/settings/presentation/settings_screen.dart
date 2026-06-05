@@ -4,6 +4,7 @@ import '../../../core/database/secure_storage_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
 import 'ai_models_screen.dart';
+import 'category_rules_screen.dart';
 import '../../auth/presentation/auth_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _usernameController = TextEditingController();
   bool _isLoading = true;
   bool _isSyncing = false;
+  DateTime _selectedBalanceDate = DateTime(2020, 1, 1);
 
   @override
   void initState() {
@@ -47,6 +49,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await ref.read(startingBalanceProvider.notifier).loadStartingBalance();
     final bal = ref.read(startingBalanceProvider);
 
+    await ref.read(startingBalanceDateProvider.notifier).loadStartingBalanceDate();
+    final dateVal = ref.read(startingBalanceDateProvider);
+
     final authState = ref.read(authProvider);
     final currentUsername = authState.username ?? '';
 
@@ -55,6 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _geminiKeyController.text = geminiKey;
       _mongoUriController.text = uri;
       _balanceController.text = bal.toStringAsFixed(2);
+      _selectedBalanceDate = dateVal;
       _usernameController.text = currentUsername;
       _isLoading = false;
     });
@@ -81,7 +87,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _saveStartingBalance() async {
     final val = double.tryParse(_balanceController.text) ?? 0.0;
     await ref.read(startingBalanceProvider.notifier).updateStartingBalance(val);
-    _showSnackBar('Starting balance configured');
+    await ref.read(startingBalanceDateProvider.notifier).updateStartingBalanceDate(_selectedBalanceDate);
+    _showSnackBar('Starting balance and date configured');
   }
 
   Future<void> _saveUsername() async {
@@ -340,6 +347,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    _buildSettingCard(
+                      context,
+                      title: 'Auto-Categorization Rules',
+                      subtitle: 'Map categories to unique transaction names (titles)',
+                      icon: Icons.label_important_outline,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CategoryRulesScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: AppTheme.glassCardDecoration(),
@@ -347,22 +367,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Initial Account Balance (₹)',
+                            'Initial Account Balance',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _balanceController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: const InputDecoration(
-                              hintText: '0.00',
-                              hintStyle: TextStyle(color: Colors.white24),
-                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: TextField(
+                                  controller: _balanceController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Balance (₹)',
+                                    labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                                    hintText: '0.00',
+                                    hintStyle: TextStyle(color: Colors.white24),
+                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 4,
+                                child: InkWell(
+                                  onTap: () async {
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: _selectedBalanceDate,
+                                      firstDate: DateTime(2000),
+                                      lastDate: DateTime(2100),
+                                      builder: (context, child) {
+                                        return Theme(
+                                          data: Theme.of(context).copyWith(
+                                            colorScheme: const ColorScheme.dark(
+                                              primary: Color(0xFF6C63FF),
+                                              onPrimary: Colors.white,
+                                              surface: Color(0xFF131326),
+                                              onSurface: Colors.white,
+                                            ),
+                                            dialogTheme: const DialogThemeData(
+                                              backgroundColor: Color(0xFF131326),
+                                            ),
+                                          ),
+                                          child: child!,
+                                        );
+                                      },
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _selectedBalanceDate = picked;
+                                      });
+                                    }
+                                  },
+                                  child: InputDecorator(
+                                    decoration: const InputDecoration(
+                                      labelText: 'Start Date',
+                                      labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${_selectedBalanceDate.year}-${_selectedBalanceDate.month.toString().padLeft(2, '0')}-${_selectedBalanceDate.day.toString().padLeft(2, '0')}',
+                                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                                        ),
+                                        const Icon(Icons.calendar_today, color: Color(0xFF00E6FF), size: 18),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Align(
                             alignment: Alignment.centerRight,
                             child: ElevatedButton(
@@ -371,7 +453,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 foregroundColor: Colors.white,
                               ),
                               onPressed: _saveStartingBalance,
-                              child: const Text('Save Balance'),
+                              child: const Text('Save Settings'),
                             ),
                           ),
                         ],

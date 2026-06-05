@@ -9,6 +9,7 @@ import '../../fitness/presentation/gym_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'navigation_state.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../../core/services/sms_sync_service.dart';
 
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -20,8 +21,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(smsSyncServiceProvider).startListening();
+    });
+  }
+  @override
   Widget build(BuildContext context) {
     final startingBalance = ref.watch(startingBalanceProvider);
+    final startingBalanceDate = ref.watch(startingBalanceDateProvider);
     final transactionsAsync = ref.watch(transactionsStreamProvider);
     final auth = ref.watch(authProvider);
     final email = auth.email ?? '';
@@ -51,6 +60,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               double totalExpense = 0.0;
 
               for (final tx in txsList) {
+                if (tx.date.isBefore(startingBalanceDate)) {
+                  continue;
+                }
                 if (tx.isExpense) {
                   totalExpense += tx.amount;
                 } else {
@@ -65,6 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 backgroundColor: const Color(0xFF131326),
                 onRefresh: () async {
                   await ref.read(startingBalanceProvider.notifier).loadStartingBalance();
+                  await ref.read(startingBalanceDateProvider.notifier).loadStartingBalanceDate();
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),

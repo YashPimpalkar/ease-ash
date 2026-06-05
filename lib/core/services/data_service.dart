@@ -352,6 +352,7 @@ class DataService {
         'category': tx.category,
         'date': tx.date.toIso8601String(),
         'userEmail': tx.userEmail ?? _userEmail,
+        'smsRefNo': tx.smsRefNo,
       };
 
   Map<String, dynamic> _diaryToMap(DiaryEntry entry) => {

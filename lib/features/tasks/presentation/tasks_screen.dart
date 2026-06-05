@@ -132,6 +132,204 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     _loadTasks();
   }
 
+  // --- Habit CRUD ---
+
+  void _showAddHabitSheet() {
+    final titleController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0E0E1B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Add Daily Habit',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Habit Title',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E6FF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    if (titleController.text.trim().isNotEmpty) {
+                      final now = DateTime.now();
+                      _addTask(
+                        titleController.text,
+                        null,
+                        DateTime(now.year, now.month, now.day, 23, 59),
+                        'medium',
+                        'Habit',
+                        [],
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Add Habit', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditHabitSheet(Task habit) {
+    final titleController = TextEditingController(text: habit.title);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0E0E1B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Edit Habit',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Habit Title',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00E6FF))),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E6FF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () async {
+                    if (titleController.text.trim().isNotEmpty) {
+                      habit.title = titleController.text.trim();
+                      habit.isSynced = false;
+                      final dataService = ref.read(dataServiceProvider);
+                      await dataService.saveTask(habit);
+                      _loadTasks();
+                      if (mounted) Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteHabitDialog(Task habit) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF131326),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Delete Habit', style: TextStyle(color: Colors.white)),
+          content: Text(
+            'Remove "${habit.title}" from your daily habits?',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5252),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                _deleteTask(habit.id);
+                Navigator.pop(context);
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showAddTaskSheet() {
     final titleController = TextEditingController();
     final descController = TextEditingController();
@@ -403,9 +601,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
-                          Text(
-                            'Daily Habits',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Daily Habits',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF00E6FF), size: 22),
+                                tooltip: 'Add Habit',
+                                onPressed: _showAddHabitSheet,
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           Container(
@@ -431,15 +639,28 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                               ),
                                             ),
                                             Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Checkbox(
                                                   value: habit.isCompleted,
                                                   activeColor: const Color(0xFF00E6FF),
                                                   onChanged: (val) => _toggleTaskCompleted(habit),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete_outline, color: Colors.white30, size: 18),
-                                                  onPressed: () => _deleteTask(habit.id),
+                                                InkWell(
+                                                  onTap: () => _showEditHabitSheet(habit),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.all(6.0),
+                                                    child: Icon(Icons.edit_outlined, color: Color(0xFF00E6FF), size: 18),
+                                                  ),
+                                                ),
+                                                InkWell(
+                                                  onTap: () => _showDeleteHabitDialog(habit),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.all(6.0),
+                                                    child: Icon(Icons.delete_outline, color: Color(0xFFFF5252), size: 18),
+                                                  ),
                                                 ),
                                               ],
                                             ),

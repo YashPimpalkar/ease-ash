@@ -94,6 +94,20 @@ class SyncService {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
           final task = _taskFromMap(doc);
+          
+          // Check for existing local task to avoid duplicates
+          final existing = await _db.tasks
+              .filter()
+              .titleEqualTo(task.title)
+              .dueDateEqualTo(task.dueDate)
+              .categoryEqualTo(task.category)
+              .findFirst();
+              
+          if (existing != null) {
+            if (existing.id != task.id) {
+              await _db.tasks.delete(existing.id);
+            }
+          }
           await _db.tasks.put(task);
         }
       });
@@ -125,6 +139,20 @@ class SyncService {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
           final event = _eventFromMap(doc);
+          
+          // Check for existing local event to avoid duplicates
+          final existing = await _db.calendarEvents
+              .filter()
+              .titleEqualTo(event.title)
+              .startTimeEqualTo(event.startTime)
+              .endTimeEqualTo(event.endTime)
+              .findFirst();
+              
+          if (existing != null) {
+            if (existing.id != event.id) {
+              await _db.calendarEvents.delete(existing.id);
+            }
+          }
           await _db.calendarEvents.put(event);
         }
       });
@@ -156,6 +184,31 @@ class SyncService {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
           final tx = _transactionFromMap(doc);
+          
+          // Check for existing local transaction to avoid duplicates
+          Transaction? existing;
+          if (tx.smsRefNo != null && tx.smsRefNo!.isNotEmpty) {
+            existing = await _db.transactions
+                .filter()
+                .smsRefNoEqualTo(tx.smsRefNo)
+                .findFirst();
+          } else {
+            final startOfDay = DateTime(tx.date.year, tx.date.month, tx.date.day);
+            final endOfDay = DateTime(tx.date.year, tx.date.month, tx.date.day, 23, 59, 59);
+            existing = await _db.transactions
+                .filter()
+                .titleEqualTo(tx.title)
+                .amountEqualTo(tx.amount)
+                .isExpenseEqualTo(tx.isExpense)
+                .dateBetween(startOfDay, endOfDay)
+                .findFirst();
+          }
+
+          if (existing != null) {
+            if (existing.id != tx.id) {
+              await _db.transactions.delete(existing.id);
+            }
+          }
           await _db.transactions.put(tx);
         }
       });
@@ -187,6 +240,19 @@ class SyncService {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
           final workout = _workoutFromMap(doc);
+          
+          // Check for existing local workout to avoid duplicates
+          final existing = await _db.gymWorkouts
+              .filter()
+              .nameEqualTo(workout.name)
+              .dateEqualTo(workout.date)
+              .findFirst();
+              
+          if (existing != null) {
+            if (existing.id != workout.id) {
+              await _db.gymWorkouts.delete(existing.id);
+            }
+          }
           await _db.gymWorkouts.put(workout);
         }
       });
@@ -218,6 +284,19 @@ class SyncService {
       await _db.isar.writeTxn(() async {
         for (final doc in remoteDocs) {
           final entry = _diaryFromMap(doc);
+          
+          // Check for existing local entry to avoid duplicates
+          final existing = await _db.diaryEntries
+              .filter()
+              .titleEqualTo(entry.title)
+              .dateEqualTo(entry.date)
+              .findFirst();
+              
+          if (existing != null) {
+            if (existing.id != entry.id) {
+              await _db.diaryEntries.delete(existing.id);
+            }
+          }
           await _db.diaryEntries.put(entry);
         }
       });
@@ -291,6 +370,7 @@ class SyncService {
         'category': tx.category,
         'date': tx.date.toIso8601String(),
         'userEmail': tx.userEmail ?? _userEmail,
+        'smsRefNo': tx.smsRefNo,
       };
 
   Transaction _transactionFromMap(Map<String, dynamic> map) => Transaction(
@@ -303,6 +383,7 @@ class SyncService {
         date: DateTime.parse(map['date'] as String),
         isSynced: true,
         userEmail: map['userEmail'] as String? ?? _userEmail,
+        smsRefNo: map['smsRefNo'] as String?,
       );
 
   Map<String, dynamic> _diaryToMap(DiaryEntry entry) => {

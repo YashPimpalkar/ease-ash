@@ -5,6 +5,9 @@ import '../../../core/database/database_service.dart';
 import '../../../core/services/data_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/calendar_event_model.dart';
+import '../../budget/domain/transaction_model.dart';
+import '../../tasks/domain/task_model.dart';
+import '../../fitness/domain/workout_model.dart';
 import 'package:isar/isar.dart';
 import '../../auth/presentation/auth_provider.dart';
 
@@ -25,6 +28,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Map<DateTime, List<CalendarEvent>> _eventsMap = {};
   bool _isLoading = true;
 
+  // Cross-feature data
+  List<Transaction> _allTransactions = [];
+  List<Task> _allTasks = [];
+  List<GymWorkout> _allWorkouts = [];
+
   @override
   void initState() {
     super.initState();
@@ -33,15 +41,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       _focusedDay.month,
       _focusedDay.day,
     );
-    _loadEvents();
+    _loadAllData();
   }
 
-  Future<void> _loadEvents() async {
+  Future<void> _loadAllData() async {
     final db = ref.read(databaseServiceProvider);
     final email = ref.read(authProvider).email ?? '';
+
+    // Load events
     final eventsList = await db.isar.calendarEvents.filter().userEmailEqualTo(email).sortByStartTime().findAll();
 
-    // Map events by day (stripping time)
     final Map<DateTime, List<CalendarEvent>> mapped = {};
     for (final event in eventsList) {
       final dayKey = DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
@@ -51,9 +60,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       mapped[dayKey]!.add(event);
     }
 
+    // Load transactions
+    final txList = await db.isar.transactions.filter().userEmailEqualTo(email).sortByDateDesc().findAll();
+
+    // Load tasks
+    final tasksList = await db.isar.tasks.filter().userEmailEqualTo(email).sortByDueDate().findAll();
+
+    // Load workouts
+    final workoutsList = await db.isar.gymWorkouts.filter().userEmailEqualTo(email).sortByDate().findAll();
+
     setState(() {
       _allEvents = eventsList;
       _eventsMap = mapped;
+      _allTransactions = txList;
+      _allTasks = tasksList;
+      _allWorkouts = workoutsList;
       _isLoading = false;
     });
   }
@@ -61,6 +82,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   List<CalendarEvent> _getEventsForDay(DateTime day) {
     final dayKey = DateTime(day.year, day.month, day.day);
     return _eventsMap[dayKey] ?? [];
+  }
+
+  List<Transaction> _getTransactionsForDay(DateTime day) {
+    return _allTransactions.where((tx) {
+      return tx.date.year == day.year && tx.date.month == day.month && tx.date.day == day.day;
+    }).toList();
+  }
+
+  List<Task> _getCompletedTasksForDay(DateTime day) {
+    return _allTasks.where((task) {
+      return task.isCompleted &&
+          task.dueDate.year == day.year &&
+          task.dueDate.month == day.month &&
+          task.dueDate.day == day.day;
+    }).toList();
+  }
+
+  List<GymWorkout> _getWorkoutsForDay(DateTime day) {
+    return _allWorkouts.where((w) {
+      return w.date.year == day.year && w.date.month == day.month && w.date.day == day.day;
+    }).toList();
   }
 
   bool _checkConflict(DateTime start, DateTime end) {
@@ -96,13 +138,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final dataService = ref.read(dataServiceProvider);
     await dataService.saveCalendarEvent(event);
-    _loadEvents();
+    _loadAllData();
   }
 
   Future<void> _deleteEvent(int id) async {
     final dataService = ref.read(dataServiceProvider);
     await dataService.deleteCalendarEvent(id);
-    _loadEvents();
+    _loadAllData();
   }
 
   Color _getCategoryColor(String category) {
@@ -373,6 +415,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final dailyEvents = _getEventsForDay(_selectedDay!);
+    final dailyTransactions = _getTransactionsForDay(_selectedDay!);
+    final dailyCompletedTasks = _getCompletedTasksForDay(_selectedDay!);
+    final dailyWorkouts = _getWorkoutsForDay(_selectedDay!);
+
+    final String selectedDateLabel =
+        '${_selectedDay!.day}/${_selectedDay!.month}/${_selectedDay!.year}';
 
     return Scaffold(
       body: Container(
@@ -457,12 +505,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                             ),
                             const SizedBox(height: 24),
+
+                            // --- Events Section ---
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16.0),
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  'Events for Today',
+                                  'Events — $selectedDateLabel',
                                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
                                 ),
                               ),
@@ -477,7 +527,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       child: Padding(
                                         padding: EdgeInsets.all(20.0),
                                         child: Text(
-                                          'No events scheduled today.',
+                                          'No events scheduled.',
                                           style: TextStyle(color: Colors.white60),
                                         ),
                                       ),
@@ -525,6 +575,231 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                                 ),
                                               ),
                                             ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // --- Transactions Section ---
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF00E676), size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Transactions',
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: AppTheme.glassCardDecoration(
+                                borderClr: const Color(0xFF00E676).withAlpha(30),
+                              ),
+                              child: dailyTransactions.isEmpty
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'No transactions on this day.',
+                                          style: TextStyle(color: Colors.white38),
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: dailyTransactions.map((tx) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 16,
+                                                backgroundColor: tx.isExpense
+                                                    ? const Color(0xFFFF5252).withAlpha(40)
+                                                    : const Color(0xFF00E676).withAlpha(40),
+                                                child: Icon(
+                                                  tx.isExpense ? Icons.arrow_downward : Icons.arrow_upward,
+                                                  color: tx.isExpense ? const Color(0xFFFF5252) : const Color(0xFF00E676),
+                                                  size: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      tx.title,
+                                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                                    ),
+                                                    Text(
+                                                      tx.category,
+                                                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Text(
+                                                '${tx.isExpense ? "-" : "+"} ₹${tx.amount.toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  color: tx.isExpense ? const Color(0xFFFF5252) : const Color(0xFF00E676),
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // --- Completed Tasks Section ---
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.task_alt, color: Color(0xFF00E6FF), size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Completed Tasks',
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: AppTheme.glassCardDecoration(
+                                borderClr: const Color(0xFF00E6FF).withAlpha(30),
+                              ),
+                              child: dailyCompletedTasks.isEmpty
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'No completed tasks on this day.',
+                                          style: TextStyle(color: Colors.white38),
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: dailyCompletedTasks.map((task) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.check_circle, color: Color(0xFF00E6FF), size: 20),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  task.title,
+                                                  style: const TextStyle(
+                                                    color: Colors.white70,
+                                                    decoration: TextDecoration.lineThrough,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF00E6FF).withAlpha(30),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  task.category,
+                                                  style: const TextStyle(color: Color(0xFF00E6FF), fontSize: 10, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // --- Workouts Section ---
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.fitness_center, color: Color(0xFFFF8A00), size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Workouts Done',
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: AppTheme.glassCardDecoration(
+                                borderClr: const Color(0xFFFF8A00).withAlpha(30),
+                              ),
+                              child: dailyWorkouts.isEmpty
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'No workouts logged on this day.',
+                                          style: TextStyle(color: Colors.white38),
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: dailyWorkouts.map((workout) {
+                                        final exerciseCount = workout.exercises.length;
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 16,
+                                                backgroundColor: const Color(0xFFFF8A00).withAlpha(40),
+                                                child: const Icon(Icons.fitness_center, color: Color(0xFFFF8A00), size: 14),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      workout.name,
+                                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                                    ),
+                                                    Text(
+                                                      '$exerciseCount exercise${exerciseCount != 1 ? 's' : ''}',
+                                                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const Icon(Icons.check_circle_outline, color: Color(0xFF00E676), size: 20),
+                                            ],
                                           ),
                                         );
                                       }).toList(),
